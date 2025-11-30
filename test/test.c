@@ -1,3 +1,7 @@
+typedef struct cyclic{
+	cyclic *next;
+};
+typedef struct cyclic *cyclic_ptr;
 struct Banana{
 	void(*callback)(int arg1, int arg2);
 	struct {
@@ -24,9 +28,6 @@ typedef struct ahoj {
 	void(*dovi3)(int);
 }ahoj;
 
-/*struct cyclic{
-	cyclic *next;
-}*/
 int funny(ahoj *co){
 	return 0;
 }

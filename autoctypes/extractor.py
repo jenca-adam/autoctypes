@@ -34,6 +34,8 @@ class Extractor:
         self.context = context
         self.typedefs = {}
         self.structs = {}
+        self.elaborated_cache = {}
+        self.processing = []
 
     def extract_code_generators(self):
         """Generates CodeGenerators from a C header file"""
@@ -162,9 +164,7 @@ class Extractor:
         return self.get_ctypes_type(curs.enum_type, loc=loc, curs=curs)
 
     def _handle_type_record(self, tp, loc, curs):
-        name = make_identifier(
-            curs.displayname if curs else tp.spelling.split()[-1].strip()
-        )
+        name = make_identifier(tp.spelling.split()[-1].strip())
         align = tp.get_align() if curs else 0
         is_union = tp.get_declaration().kind == cindex.CursorKind.UNION_DECL
         # print(tp.get_declaration().kind, is_union)
@@ -173,9 +173,11 @@ class Extractor:
             for chld in (curs.get_children() if curs else tp.get_fields())
             if chld.kind == cindex.CursorKind.FIELD_DECL
         )
+        self.processing.append(tuple(tp.data))
         fields = [
             (field.spelling, self.get_ctypes_type(curs=field)) for field in fielditer
         ]
+        self.processing.pop()
         # anon = [field.spelling for field in fielditer if field.is_anonymous()]
         localdefs = []
         for index, (spelling, ctp) in enumerate(fields):
@@ -210,15 +212,22 @@ class Extractor:
     def _handle_type_elaborated(self, tp, loc, *_):
         if tp.spelling not in self.typedefs:
             canon = tp.get_canonical()
-            if canon.kind != cindex.TypeKind.ELABORATED:
-
-                return self.get_ctypes_type(canon)
-            warnings.warn(
-                UserWarning(
-                    f"{location_to_str(loc)}: "
-                    f"elaborated type {tp.spelling} not in typedefs. Using int."
+            if tuple(canon.data) in self.processing:
+                return ctypes_ext.mk_elaborated(tp.spelling, None)
+            elif canon.kind != cindex.TypeKind.ELABORATED:
+                data = tuple(canon.data)
+                if data not in self.elaborated_cache:
+                    self.processing.append(data)
+                    self.elaborated_cache[data] = self.get_ctypes_type(canon)
+                    self.processing.pop()
+                return self.elaborated_cache[data]
+            else:
+                warnings.warn(
+                    UserWarning(
+                        f"{location_to_str(loc)}: "
+                        f"elaborated type {tp.spelling} not in typedefs. Using int."
+                    )
                 )
-            )
             return ctypes_ext.c_int
         return ctypes_ext.mk_elaborated(
             tp.spelling, self.typedefs.get(tp.spelling, ctypes_ext.c_int)

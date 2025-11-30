@@ -1,1 +1,2 @@
 test/autoctypes
+*__pycache__*

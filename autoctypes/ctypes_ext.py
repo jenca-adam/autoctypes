@@ -9,6 +9,7 @@ import sys
 import ast
 from ctypes import *
 from .reconstruct import reconstruct_type
+from .util import make_identifier
 
 ### STRUCT (factory)
 
@@ -90,10 +91,11 @@ def make_func(name, restype, argtypes, locs, context):
 ### ELABORATED (factory)
 
 
-def mk_elaborated(name, ctype):
+def mk_elaborated(raw_name, ctype):
     """
     Creates a representation of an elaborated object
     """
+    name = make_identifier(raw_name.split()[-1].strip())
 
     class _ELABORATED(EELABORATED):
         __name__ = name

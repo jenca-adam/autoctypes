@@ -45,28 +45,11 @@ class StructCodeGenerator(CodeGenerator):
         self.struct = cstruct
 
     def __actp_code_generator__(self, *args, comment_override=None, **kwargs):
+        body = []
         class_body = [
             reconstruct_code_generator(locdef, comment_override=False)
             for locdef in self.struct._localdefs
-        ]
-        body = []
-        fields_assign_targets = [ast.Name("_fields_")]
-        fields_assign_elts = [
-            ast.Tuple(
-                [ast.Constant(fld[0]), reconstruct_type(fld[1])]
-                + ([ast.Const(fld[2])] if len(fld) > 2 else [])
-            )
-            for fld in self.struct._fields_
-        ]
-        fields_assign_value = ast.List(fields_assign_elts)
-        fields_assign = ast.Assign(fields_assign_targets, fields_assign_value, lineno=0)
-        if self.struct._align_val > 0:
-            align_assign_targets = [ast.Name("_align_")]
-            align_assign = ast.Assign(
-                align_assign_targets, ast.Constant(self.struct._align_), lineno=0
-            )
-            class_body.append(align_assign)
-        class_body.append(fields_assign)
+        ] or [ast.Pass()]
         comment = (
             comment_override
             if comment_override is not None
@@ -81,6 +64,28 @@ class StructCodeGenerator(CodeGenerator):
                 body=class_body,
             )
         )
+        fields_assign_targets = [
+            ast.Attribute(ast.Name(self.struct.__qualname__), "_fields_")
+        ]
+        fields_assign_elts = [
+            ast.Tuple(
+                [ast.Constant(fld[0]), reconstruct_type(fld[1])]
+                + ([ast.Const(fld[2])] if len(fld) > 2 else [])
+            )
+            for fld in self.struct._fields_
+        ]
+        fields_assign_value = ast.List(fields_assign_elts)
+        fields_assign = ast.Assign(fields_assign_targets, fields_assign_value, lineno=0)
+        if self.struct._align_val > 0:
+            align_assign_targets = [
+                ast.Attribute(ast.Name(self.struct.__qualname__), "_align_")
+            ]
+            align_assign = ast.Assign(
+                align_assign_targets, ast.Constant(self.struct._align_), lineno=0
+            )
+            body.append(align_assign)
+        body.append(fields_assign)
+
         return body
 
 
