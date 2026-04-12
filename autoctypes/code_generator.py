@@ -6,6 +6,7 @@ from .reconstruct import (
     reconstruct_code_generator,
     stringify_code_generator,
     reconstruct_type,
+    reconstruct_type_hint,
 )
 from .ctypes_ext import *
 
@@ -21,11 +22,13 @@ class CodeGenerator:
         raise NotImplementedError("abstract class")
 
     @classmethod
-    def from_ctype(self, ctype, *args, **kwargs):
+    def from_ctype(cls, ctype, *args, **kwargs):
         if issubclass(ctype, ESTRUCT):
             return StructCodeGenerator(ctype, *args, **kwargs)
         if issubclass(ctype, EFUNC):  # i regret my earlier decisions :(
             return FuncCodeGenerator(ctype, *args, **kwargs)
+        if issubclass(ctype, EELABORATED):
+            return cls.from_ctype(ctype._original)
         warnings.warn(
             UserWarning(f"can't generate {ctype.__qualname__}, not including")
         )
@@ -33,7 +36,12 @@ class CodeGenerator:
 
 
 class DummyCodeGenerator(CodeGenerator):
-    def __init__(self, ctype, *args, **kwargs,):
+    def __init__(
+        self,
+        ctype,
+        *args,
+        **kwargs,
+    ):
         self.ctype = ctype
 
     def __actp_code_generator__(self, *args, **kwargs):
@@ -44,16 +52,43 @@ class StructCodeGenerator(CodeGenerator):
     def __init__(self, cstruct):
         self.struct = cstruct
 
-    def __actp_code_generator__(self, *args, taken = None, comment_override=None, **kwargs):
+    def _gen_type_hints(self, type_check_guard=True):
+        hints = []
+        for field in self.struct._fields_:
+            field_name, field_type = field
+            hints.append(
+                ast.AnnAssign(
+                    target=ast.Name(field_name),
+                    annotation=reconstruct_type_hint(field_type),
+                    value=0,
+                    simple=1,
+                )
+            )
+            if field_name in self.struct._anonymous_:
+                hints.extend(
+                    CodeGenerator.from_ctype(field_type)._gen_type_hints(False)
+                )
+        if type_check_guard:
+            return [ast.If(ast.Name("TYPE_CHECKING"), hints)]
+        return hints
+
+    def __actp_code_generator__(
+        self, *args, taken=None, comment_override=None, type_hints=False, **kwargs
+    ):
         taken = taken if taken is not None else set()
         body = [
-            reconstruct_code_generator(locdef, taken=taken, comment_override=False)
-            for locdef in self.struct._localdefs if getattr(getattr(locdef, "struct", None), "__qualname__", None) not in taken
+            reconstruct_code_generator(locdef, taken=taken, type_hints=type_hints)
+            for locdef in self.struct._localdefs
+            if getattr(getattr(locdef, "struct", None), "__qualname__", None)
+            not in taken
         ]
         if self.struct.__qualname__ in taken:
             return body
         taken.add(self.struct.__qualname__)
-        class_body = [ast.Pass()]
+        if not type_hints:
+            class_body = [ast.Pass()]
+        else:
+            class_body = self._gen_type_hints()
         comment = (
             comment_override
             if comment_override is not None
@@ -88,9 +123,19 @@ class StructCodeGenerator(CodeGenerator):
                 align_assign_targets, ast.Constant(self.struct._align_), lineno=0
             )
             body.append(align_assign)
+        if self.struct._anonymous_:
+            anon_assign_targets = [
+                ast.Attribute(ast.Name(self.struct.__qualname__), "_anonymous_")
+            ]
+            anon_assign_value = ast.Tuple(
+                [ast.Constant(name) for name in self.struct._anonymous_]
+            )
+            anon_assign = ast.Assign(anon_assign_targets, anon_assign_value, lineno=0)
+            body.append(anon_assign)
         body.append(fields_assign)
 
         return body
+
 
 class FuncCodeGenerator(CodeGenerator):
     def __init__(self, func):
@@ -103,7 +148,7 @@ class FuncCodeGenerator(CodeGenerator):
                 UserWarning(
                     f"self.function {self.func.__qualname__}"
                     "not found in any of the provided libraries."
-                    f"Types won't be assigned. (code_generatord at {self.func._loc})"
+                    f"Types won't be assigned. (code_generator at {self.func._loc})"
                 )
             )
             return ()

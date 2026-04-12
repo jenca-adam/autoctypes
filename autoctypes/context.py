@@ -16,6 +16,7 @@ class Context:
         self.comment = True
         self.files = files
         self.libs = libs
+
     def find_lib(self, func):
         # TODO
         for lib in self.libs:

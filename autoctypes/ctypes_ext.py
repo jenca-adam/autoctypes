@@ -8,7 +8,7 @@ import struct
 import sys
 import ast
 from ctypes import *
-from .reconstruct import reconstruct_type
+from .reconstruct import reconstruct_type, reconstruct_type_hint
 from .util import make_identifier
 
 ### STRUCT (factory)
@@ -34,7 +34,7 @@ class EARRAY:
     pass
 
 
-def make_struct(name, fields, align, locs, localdefs, is_union, context):
+def make_struct(name, fields, align, locs, localdefs, is_union, context, anon):
     """
     Creates a user-defined struct object.
     """
@@ -51,11 +51,15 @@ def make_struct(name, fields, align, locs, localdefs, is_union, context):
 
         if align > 0:
             _align_ = align
-        # _anonymous_ = anon
+        _anonymous_ = anon
         _fields_ = fields
 
         @classmethod
         def __actp_reconstruct__(self):
+            return ast.Name(name)
+
+        @classmethod
+        def __actp_type_hint__(self):
             return ast.Name(name)
 
     return _STRUCT
@@ -85,6 +89,20 @@ def make_func(name, restype, argtypes, locs, context):
                 ),
             )
 
+        @classmethod
+        def __actp_type_hint__(cls):
+            return ast.Subscript(
+                ast.Name("Callable"),
+                ast.Tuple(
+                    (
+                        ast.List(
+                            [reconstruct_type_hint(argt) for argt in cls._argtypes]
+                        ),
+                        reconstruct_type_hint(cls._restype),
+                    )
+                ),
+            )
+
     return _FUNC
 
 
@@ -100,9 +118,14 @@ def mk_elaborated(raw_name, ctype):
     class _ELABORATED(EELABORATED):
         __name__ = name
         __qualname__ = name
+        _original = ctype
 
         @classmethod
         def __actp_reconstruct__(cls):
+            return ast.Name(cls.__qualname__)
+
+        @classmethod
+        def __actp_type_hint__(cls):
             return ast.Name(cls.__qualname__)
 
     return _ELABORATED
@@ -124,6 +147,15 @@ def mk_ptr(ctype):
         def __actp_reconstruct__(cls):
             return ast.Call(ast.Name("POINTER"), [reconstruct_type(cls.__pointee)])
 
+        @classmethod
+        def __actp_type_hint__(cls):
+            # is there a better way?
+            if cls.__pointee in (None, type(None)):
+                return ast.Name("c_void_p")
+            return ast.Subscript(
+                ast.Name("_Pointer"), reconstruct_type_hint(cls.__pointee, True)
+            )
+
     return _POINTER
 
 
@@ -138,11 +170,18 @@ def mk_array(ctype, array_size):
     class _ARRAY(EARRAY):
         __item_type = ctype
         __size = array_size
+        _NEEDSDEF = ctype if getattr(ctype, "_NEEDSDEF", False) else False
 
         @classmethod
         def __actp_reconstruct__(cls):
             return ast.BinOp(
                 reconstruct_type(cls.__item_type), ast.Mult(), ast.Constant(cls.__size)
+            )
+
+        @classmethod
+        def __actp_type_hint__(cls):
+            return ast.Subscript(
+                ast.Name("Array"), reconstruct_type_hint(cls.__item_type, True)
             )
 
     return _ARRAY

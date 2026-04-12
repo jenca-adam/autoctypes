@@ -4,7 +4,7 @@ Extracts data from C header files
 
 import warnings
 from clang import cindex
-import os 
+import os
 from . import ctypes_ext
 from .context import Context
 from .util import make_identifier
@@ -176,18 +176,36 @@ class Extractor:
         name = make_identifier(tp.spelling.split()[-1].strip())
         align = tp.get_align() if curs else 0
         is_union = tp.get_declaration().kind == cindex.CursorKind.UNION_DECL
+        loc = loc or tp.get_declaration().location
         # print(tp.get_declaration().kind, is_union)
         fielditer = list(
             chld
             for chld in (curs.get_children() if curs else tp.get_fields())
             if chld.kind == cindex.CursorKind.FIELD_DECL
+            or chld.is_anonymous_record_decl()
         )
         self.processing.append(tuple(tp.data))
         fields = [
-            (field.spelling, self.get_ctypes_type(curs=field)) for field in fielditer
+            (
+                make_identifier(
+                    "_" + field.spelling
+                    if field.is_anonymous_record_decl()
+                    else field.spelling
+                ),
+                self.get_ctypes_type(curs=field),
+            )
+            for field in fielditer
         ]
         self.processing.pop()
-        # anon = [field.spelling for field in fielditer if field.is_anonymous()]
+        anon = [
+            make_identifier(
+                "_" + field.spelling
+                if field.is_anonymous_record_decl()
+                else field.spelling
+            )
+            for field in fielditer
+            if field.is_anonymous_record_decl()
+        ]
         localdefs = []
         for index, (spelling, ctp) in enumerate(fields):
             needsdef = getattr(ctp, "_NEEDSDEF", False)
@@ -200,19 +218,29 @@ class Extractor:
                     (
                         ctp
                         if issubclass(ctp, ctypes_ext.EPOINTER)
+                        or issubclass(ctp, ctypes_ext.EARRAY)
                         else ctypes_ext.mk_elaborated(needsdef.__qualname__, needsdef)
                     ),
                 )  # not _handle_type_elaborated because of the canonical check
         return ctypes_ext.make_struct(
-            name, fields, align, location_to_str(loc), localdefs, is_union, self.context
+            name,
+            fields,
+            align,
+            location_to_str(loc),
+            localdefs,
+            is_union,
+            self.context,
+            anon,
         )
 
     def _handle_type_functionproto(self, tp, loc, curs):
         restype = self.get_ctypes_type(tp.get_result(), loc=loc)
-        if (tp.kind==cindex.TypeKind.FUNCTIONNOPROTO):
-            argtypes = []    
+        if tp.kind == cindex.TypeKind.FUNCTIONNOPROTO:
+            argtypes = []
         else:
-            argtypes = [self.get_ctypes_type(arg, loc=loc) for arg in tp.argument_types()]
+            argtypes = [
+                self.get_ctypes_type(arg, loc=loc) for arg in tp.argument_types()
+            ]
         return ctypes_ext.make_func(
             curs.spelling if curs else "ANONYMOUS",
             restype,
