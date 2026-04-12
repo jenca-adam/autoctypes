@@ -21,19 +21,19 @@ class CodeGenerator:
         raise NotImplementedError("abstract class")
 
     @classmethod
-    def from_ctype(self, ctype):
+    def from_ctype(self, ctype, *args, **kwargs):
         if issubclass(ctype, ESTRUCT):
-            return StructCodeGenerator(ctype)
+            return StructCodeGenerator(ctype, *args, **kwargs)
         if issubclass(ctype, EFUNC):  # i regret my earlier decisions :(
-            return FuncCodeGenerator(ctype)
+            return FuncCodeGenerator(ctype, *args, **kwargs)
         warnings.warn(
             UserWarning(f"can't generate {ctype.__qualname__}, not including")
         )
-        return DummyCodeGenerator(ctype)
+        return DummyCodeGenerator(ctype, *args, **kwargs)
 
 
 class DummyCodeGenerator(CodeGenerator):
-    def __init__(self, ctype):
+    def __init__(self, ctype, *args, **kwargs,):
         self.ctype = ctype
 
     def __actp_code_generator__(self, *args, **kwargs):
@@ -44,12 +44,16 @@ class StructCodeGenerator(CodeGenerator):
     def __init__(self, cstruct):
         self.struct = cstruct
 
-    def __actp_code_generator__(self, *args, comment_override=None, **kwargs):
-        body = []
-        class_body = [
-            reconstruct_code_generator(locdef, comment_override=False)
-            for locdef in self.struct._localdefs
-        ] or [ast.Pass()]
+    def __actp_code_generator__(self, *args, taken = None, comment_override=None, **kwargs):
+        taken = taken if taken is not None else set()
+        body = [
+            reconstruct_code_generator(locdef, taken=taken, comment_override=False)
+            for locdef in self.struct._localdefs if getattr(getattr(locdef, "struct", None), "__qualname__", None) not in taken
+        ]
+        if self.struct.__qualname__ in taken:
+            return body
+        taken.add(self.struct.__qualname__)
+        class_body = [ast.Pass()]
         comment = (
             comment_override
             if comment_override is not None
@@ -87,7 +91,6 @@ class StructCodeGenerator(CodeGenerator):
         body.append(fields_assign)
 
         return body
-
 
 class FuncCodeGenerator(CodeGenerator):
     def __init__(self, func):

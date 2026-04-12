@@ -1,0 +1,797 @@
+
+# file /usr/include/linux/videodev2.h, line 415, column 8
+
+class v4l2_rect(Structure):
+    pass
+v4l2_rect._align_ = 4
+v4l2_rect._fields_ = [('left', c_int), ('top', c_int), ('width', c_uint), ('height', c_uint)]
+
+# file /usr/include/linux/videodev2.h, line 422, column 8
+
+class v4l2_fract(Structure):
+    pass
+v4l2_fract._align_ = 4
+v4l2_fract._fields_ = [('numerator', c_uint), ('denominator', c_uint)]
+
+# file /usr/include/linux/videodev2.h, line 427, column 8
+
+class v4l2_area(Structure):
+    pass
+v4l2_area._align_ = 4
+v4l2_area._fields_ = [('width', c_uint), ('height', c_uint)]
+
+# file /usr/include/linux/videodev2.h, line 443, column 8
+
+class v4l2_capability(Structure):
+    pass
+v4l2_capability._align_ = 4
+v4l2_capability._fields_ = [('driver', c_ubyte * 16), ('card', c_ubyte * 32), ('bus_info', c_ubyte * 32), ('version', c_uint), ('capabilities', c_uint), ('device_caps', c_uint), ('reserved', c_uint * 3)]
+
+# file /usr/include/linux/videodev2.h, line 499, column 8
+
+class v4l2_pix_format(Structure):
+    pass
+v4l2_pix_format._align_ = 4
+v4l2_pix_format._fields_ = [('width', c_uint), ('height', c_uint), ('pixelformat', c_uint), ('field', c_uint), ('bytesperline', c_uint), ('sizeimage', c_uint), ('colorspace', c_uint), ('priv', c_uint), ('flags', c_uint), ('quantization', c_uint), ('xfer_func', c_uint)]
+
+# file /usr/include/linux/videodev2.h, line 875, column 8
+
+class v4l2_fmtdesc(Structure):
+    pass
+v4l2_fmtdesc._align_ = 4
+v4l2_fmtdesc._fields_ = [('index', c_uint), ('type', c_uint), ('flags', c_uint), ('description', c_ubyte * 32), ('pixelformat', c_uint), ('mbus_code', c_uint), ('reserved', c_uint * 3)]
+
+# file /usr/include/linux/videodev2.h, line 910, column 8
+
+class v4l2_frmsize_discrete(Structure):
+    pass
+v4l2_frmsize_discrete._align_ = 4
+v4l2_frmsize_discrete._fields_ = [('width', c_uint), ('height', c_uint)]
+
+# file /usr/include/linux/videodev2.h, line 915, column 8
+
+class v4l2_frmsize_stepwise(Structure):
+    pass
+v4l2_frmsize_stepwise._align_ = 4
+v4l2_frmsize_stepwise._fields_ = [('min_width', c_uint), ('max_width', c_uint), ('step_width', c_uint), ('min_height', c_uint), ('max_height', c_uint), ('step_height', c_uint)]
+
+# file /usr/include/linux/videodev2.h, line 924, column 8
+
+class v4l2_frmsizeenum(Structure):
+    pass
+v4l2_frmsizeenum._align_ = 4
+v4l2_frmsizeenum._fields_ = [('index', c_uint), ('pixel_format', c_uint), ('type', c_uint), ('reserved', c_uint * 2)]
+class v4l2_fract(Structure):
+    pass
+v4l2_fract._fields_ = [('numerator', c_uint), ('denominator', c_uint)]
+
+class v4l2_fract(Structure):
+    pass
+v4l2_fract._fields_ = [('numerator', c_uint), ('denominator', c_uint)]
+
+class v4l2_fract(Structure):
+    pass
+v4l2_fract._fields_ = [('numerator', c_uint), ('denominator', c_uint)]
+# file /usr/include/linux/videodev2.h, line 946, column 8
+
+class v4l2_frmival_stepwise(Structure):
+    pass
+v4l2_frmival_stepwise._align_ = 4
+v4l2_frmival_stepwise._fields_ = [('min', v4l2_fract), ('max', v4l2_fract), ('step', v4l2_fract)]
+
+# file /usr/include/linux/videodev2.h, line 952, column 8
+
+class v4l2_frmivalenum(Structure):
+    pass
+v4l2_frmivalenum._align_ = 4
+v4l2_frmivalenum._fields_ = [('index', c_uint), ('pixel_format', c_uint), ('width', c_uint), ('height', c_uint), ('type', c_uint), ('reserved', c_uint * 2)]
+
+# file /usr/include/linux/videodev2.h, line 970, column 8
+
+class v4l2_timecode(Structure):
+    pass
+v4l2_timecode._align_ = 4
+v4l2_timecode._fields_ = [('type', c_uint), ('flags', c_uint), ('frames', c_ubyte), ('seconds', c_ubyte), ('minutes', c_ubyte), ('hours', c_ubyte), ('userbits', c_ubyte * 4)]
+
+# file /usr/include/linux/videodev2.h, line 995, column 8
+
+class v4l2_jpegcompression(Structure):
+    pass
+v4l2_jpegcompression._align_ = 4
+v4l2_jpegcompression._fields_ = [('quality', c_int), ('APPn', c_int), ('APP_len', c_int), ('APP_data', c_char * 60), ('COM_len', c_int), ('COM_data', c_char * 60), ('jpeg_markers', c_uint)]
+
+# file /usr/include/linux/videodev2.h, line 1029, column 8
+
+class v4l2_requestbuffers(Structure):
+    pass
+v4l2_requestbuffers._align_ = 4
+v4l2_requestbuffers._fields_ = [('count', c_uint), ('type', c_uint), ('memory', c_uint), ('capabilities', c_uint), ('flags', c_ubyte), ('reserved', c_ubyte * 3)]
+class _usr_include_linux_videodev2_h_1076_2_(Union):
+    pass
+_usr_include_linux_videodev2_h_1076_2_._fields_ = [('mem_offset', c_uint), ('userptr', c_ulong), ('fd', c_int)]
+# file /usr/include/linux/videodev2.h, line 1073, column 8
+
+class v4l2_plane(Structure):
+    pass
+v4l2_plane._align_ = 8
+v4l2_plane._fields_ = [('bytesused', c_uint), ('length', c_uint), ('m', _usr_include_linux_videodev2_h_1076_2_), ('data_offset', c_uint), ('reserved', c_uint * 11)]
+class timeval(Structure):
+    pass
+timeval._fields_ = [('tv_sec', c_long), ('tv_usec', c_long)]
+
+class v4l2_timecode(Structure):
+    pass
+v4l2_timecode._fields_ = [('type', c_uint), ('flags', c_uint), ('frames', c_ubyte), ('seconds', c_ubyte), ('minutes', c_ubyte), ('hours', c_ubyte), ('userbits', c_ubyte * 4)]
+
+class _usr_include_linux_videodev2_h_1076_2_(Union):
+    pass
+_usr_include_linux_videodev2_h_1076_2_._fields_ = [('mem_offset', c_uint), ('userptr', c_ulong), ('fd', c_int)]
+
+class v4l2_plane(Structure):
+    pass
+v4l2_plane._fields_ = [('bytesused', c_uint), ('length', c_uint), ('m', _usr_include_linux_videodev2_h_1076_2_), ('data_offset', c_uint), ('reserved', c_uint * 11)]
+
+class _usr_include_linux_videodev2_h_1132_2_(Union):
+    pass
+_usr_include_linux_videodev2_h_1132_2_._fields_ = [('offset', c_uint), ('userptr', c_ulong), ('planes', POINTER(v4l2_plane)), ('fd', c_int)]
+# file /usr/include/linux/videodev2.h, line 1120, column 8
+
+class v4l2_buffer(Structure):
+    pass
+v4l2_buffer._align_ = 8
+v4l2_buffer._fields_ = [('index', c_uint), ('type', c_uint), ('bytesused', c_uint), ('flags', c_uint), ('field', c_uint), ('timestamp', timeval), ('timecode', v4l2_timecode), ('sequence', c_uint), ('memory', c_uint), ('m', _usr_include_linux_videodev2_h_1132_2_), ('length', c_uint), ('reserved2', c_uint)]
+
+# file /usr/include/linux/videodev2.h, line 1153, column 25
+DUMMYLIB_so.v4l2_timeval_to_ns.argtypes = [POINTER(timeval)]
+DUMMYLIB_so.v4l2_timeval_to_ns.restype = c_ulong
+
+# file /usr/include/linux/videodev2.h, line 1217, column 8
+
+class v4l2_exportbuffer(Structure):
+    pass
+v4l2_exportbuffer._align_ = 4
+v4l2_exportbuffer._fields_ = [('type', c_uint), ('index', c_uint), ('plane', c_uint), ('flags', c_uint), ('fd', c_int), ('reserved', c_uint * 11)]
+class _usr_include_linux_videodev2_h_1235_2_(Structure):
+    pass
+_usr_include_linux_videodev2_h_1235_2_._fields_ = [('width', c_uint), ('height', c_uint), ('pixelformat', c_uint), ('field', c_uint), ('bytesperline', c_uint), ('sizeimage', c_uint), ('colorspace', c_uint), ('priv', c_uint)]
+# file /usr/include/linux/videodev2.h, line 1229, column 8
+
+class v4l2_framebuffer(Structure):
+    pass
+v4l2_framebuffer._align_ = 8
+v4l2_framebuffer._fields_ = [('capability', c_uint), ('flags', c_uint), ('base', POINTER(None)), ('fmt', _usr_include_linux_videodev2_h_1235_2_)]
+class v4l2_rect(Structure):
+    pass
+v4l2_rect._fields_ = [('left', c_int), ('top', c_int), ('width', c_uint), ('height', c_uint)]
+# file /usr/include/linux/videodev2.h, line 1264, column 8
+
+class v4l2_clip(Structure):
+    pass
+v4l2_clip._align_ = 8
+v4l2_clip._fields_ = [('c', v4l2_rect), ('next', POINTER(v4l2_clip))]
+class v4l2_rect(Structure):
+    pass
+v4l2_rect._fields_ = [('left', c_int), ('top', c_int), ('width', c_uint), ('height', c_uint)]
+
+class v4l2_rect(Structure):
+    pass
+v4l2_rect._fields_ = [('left', c_int), ('top', c_int), ('width', c_uint), ('height', c_uint)]
+
+class v4l2_clip(Structure):
+    pass
+v4l2_clip._fields_ = [('c', v4l2_rect), ('next', POINTER(v4l2_clip))]
+# file /usr/include/linux/videodev2.h, line 1269, column 8
+
+class v4l2_window(Structure):
+    pass
+v4l2_window._align_ = 8
+v4l2_window._fields_ = [('w', v4l2_rect), ('field', c_uint), ('chromakey', c_uint), ('clips', POINTER(v4l2_clip)), ('clipcount', c_uint), ('bitmap', POINTER(None)), ('global_alpha', c_ubyte)]
+class v4l2_fract(Structure):
+    pass
+v4l2_fract._fields_ = [('numerator', c_uint), ('denominator', c_uint)]
+# file /usr/include/linux/videodev2.h, line 1282, column 8
+
+class v4l2_captureparm(Structure):
+    pass
+v4l2_captureparm._align_ = 4
+v4l2_captureparm._fields_ = [('capability', c_uint), ('capturemode', c_uint), ('timeperframe', v4l2_fract), ('extendedmode', c_uint), ('readbuffers', c_uint), ('reserved', c_uint * 4)]
+class v4l2_fract(Structure):
+    pass
+v4l2_fract._fields_ = [('numerator', c_uint), ('denominator', c_uint)]
+# file /usr/include/linux/videodev2.h, line 1295, column 8
+
+class v4l2_outputparm(Structure):
+    pass
+v4l2_outputparm._align_ = 4
+v4l2_outputparm._fields_ = [('capability', c_uint), ('outputmode', c_uint), ('timeperframe', v4l2_fract), ('extendedmode', c_uint), ('writebuffers', c_uint), ('reserved', c_uint * 4)]
+class v4l2_rect(Structure):
+    pass
+v4l2_rect._fields_ = [('left', c_int), ('top', c_int), ('width', c_uint), ('height', c_uint)]
+
+class v4l2_rect(Structure):
+    pass
+v4l2_rect._fields_ = [('left', c_int), ('top', c_int), ('width', c_uint), ('height', c_uint)]
+
+class v4l2_fract(Structure):
+    pass
+v4l2_fract._fields_ = [('numerator', c_uint), ('denominator', c_uint)]
+# file /usr/include/linux/videodev2.h, line 1307, column 8
+
+class v4l2_cropcap(Structure):
+    pass
+v4l2_cropcap._align_ = 4
+v4l2_cropcap._fields_ = [('type', c_uint), ('bounds', v4l2_rect), ('defrect', v4l2_rect), ('pixelaspect', v4l2_fract)]
+class v4l2_rect(Structure):
+    pass
+v4l2_rect._fields_ = [('left', c_int), ('top', c_int), ('width', c_uint), ('height', c_uint)]
+# file /usr/include/linux/videodev2.h, line 1314, column 8
+
+class v4l2_crop(Structure):
+    pass
+v4l2_crop._align_ = 4
+v4l2_crop._fields_ = [('type', c_uint), ('c', v4l2_rect)]
+class v4l2_rect(Structure):
+    pass
+v4l2_rect._fields_ = [('left', c_int), ('top', c_int), ('width', c_uint), ('height', c_uint)]
+# file /usr/include/linux/videodev2.h, line 1332, column 8
+
+class v4l2_selection(Structure):
+    pass
+v4l2_selection._align_ = 4
+v4l2_selection._fields_ = [('type', c_uint), ('target', c_uint), ('flags', c_uint), ('r', v4l2_rect), ('reserved', c_uint * 9)]
+
+# file /usr/include/linux/videodev2.h, line 1345, column 15
+v4l2_std_id = c_ulong
+class v4l2_fract(Structure):
+    pass
+v4l2_fract._fields_ = [('numerator', c_uint), ('denominator', c_uint)]
+# file /usr/include/linux/videodev2.h, line 1477, column 8
+
+class v4l2_standard(Structure):
+    pass
+v4l2_standard._align_ = 8
+v4l2_standard._fields_ = [('index', c_uint), ('id', c_ulong), ('name', c_ubyte * 24), ('frameperiod', v4l2_fract), ('framelines', c_uint), ('reserved', c_uint * 4)]
+class v4l2_fract(Structure):
+    pass
+v4l2_fract._fields_ = [('numerator', c_uint), ('denominator', c_uint)]
+# file /usr/include/linux/videodev2.h, line 1525, column 8
+
+class v4l2_bt_timings(Structure):
+    pass
+v4l2_bt_timings._align_ = 1
+v4l2_bt_timings._fields_ = [('width', c_uint), ('height', c_uint), ('interlaced', c_uint), ('polarities', c_uint), ('pixelclock', c_ulong), ('hfrontporch', c_uint), ('hsync', c_uint), ('hbackporch', c_uint), ('vfrontporch', c_uint), ('vsync', c_uint), ('vbackporch', c_uint), ('il_vfrontporch', c_uint), ('il_vsync', c_uint), ('il_vbackporch', c_uint), ('standards', c_uint), ('flags', c_uint), ('picture_aspect', v4l2_fract), ('cea861_vic', c_ubyte), ('hdmi_vic', c_ubyte), ('reserved', c_ubyte * 46)]
+
+# file /usr/include/linux/videodev2.h, line 1649, column 8
+
+class v4l2_dv_timings(Structure):
+    pass
+v4l2_dv_timings._align_ = 1
+v4l2_dv_timings._fields_ = [('type', c_uint)]
+class _usr_include_linux_videodev2_h_1651_2_(Union):
+    pass
+_usr_include_linux_videodev2_h_1651_2_._align_ = 4
+_usr_include_linux_videodev2_h_1651_2_._fields_ = []
+
+class v4l2_dv_timings(Structure):
+    pass
+v4l2_dv_timings._fields_ = [('type', c_uint), ('union v4l2_dv_timings::(anonymous at /usr/include/linux/videodev2.h:1651:2)', _usr_include_linux_videodev2_h_1651_2_)]
+# file /usr/include/linux/videodev2.h, line 1668, column 8
+
+class v4l2_enum_dv_timings(Structure):
+    pass
+v4l2_enum_dv_timings._align_ = 4
+v4l2_enum_dv_timings._fields_ = [('index', c_uint), ('pad', c_uint), ('reserved', c_uint * 2), ('timings', v4l2_dv_timings)]
+
+# file /usr/include/linux/videodev2.h, line 1686, column 8
+
+class v4l2_bt_timings_cap(Structure):
+    pass
+v4l2_bt_timings_cap._align_ = 1
+v4l2_bt_timings_cap._fields_ = [('min_width', c_uint), ('max_width', c_uint), ('min_height', c_uint), ('max_height', c_uint), ('min_pixelclock', c_ulong), ('max_pixelclock', c_ulong), ('standards', c_uint), ('capabilities', c_uint), ('reserved', c_uint * 16)]
+
+# file /usr/include/linux/videodev2.h, line 1713, column 8
+
+class v4l2_dv_timings_cap(Structure):
+    pass
+v4l2_dv_timings_cap._align_ = 4
+v4l2_dv_timings_cap._fields_ = [('type', c_uint), ('pad', c_uint), ('reserved', c_uint * 2)]
+
+# file /usr/include/linux/videodev2.h, line 1727, column 8
+
+class v4l2_input(Structure):
+    pass
+v4l2_input._align_ = 8
+v4l2_input._fields_ = [('index', c_uint), ('name', c_ubyte * 32), ('type', c_uint), ('audioset', c_uint), ('tuner', c_uint), ('std', c_ulong), ('status', c_uint), ('capabilities', c_uint), ('reserved', c_uint * 3)]
+
+# file /usr/include/linux/videodev2.h, line 1779, column 8
+
+class v4l2_output(Structure):
+    pass
+v4l2_output._align_ = 8
+v4l2_output._fields_ = [('index', c_uint), ('name', c_ubyte * 32), ('type', c_uint), ('audioset', c_uint), ('modulator', c_uint), ('std', c_ulong), ('capabilities', c_uint), ('reserved', c_uint * 3)]
+
+# file /usr/include/linux/videodev2.h, line 1803, column 8
+
+class v4l2_control(Structure):
+    pass
+v4l2_control._align_ = 4
+v4l2_control._fields_ = [('id', c_uint), ('value', c_int)]
+
+# file /usr/include/linux/videodev2.h, line 1808, column 8
+
+class v4l2_ext_control(Structure):
+    pass
+v4l2_ext_control._align_ = 1
+v4l2_ext_control._fields_ = [('id', c_uint), ('size', c_uint), ('reserved2', c_uint * 1)]
+class _usr_include_linux_videodev2_h_1812_2_(Union):
+    pass
+_usr_include_linux_videodev2_h_1812_2_._align_ = 1
+_usr_include_linux_videodev2_h_1812_2_._fields_ = []
+
+class v4l2_ext_control(Structure):
+    pass
+v4l2_ext_control._fields_ = [('id', c_uint), ('size', c_uint), ('reserved2', c_uint * 1), ('union v4l2_ext_control::(anonymous at /usr/include/linux/videodev2.h:1812:2)', _usr_include_linux_videodev2_h_1812_2_)]
+# file /usr/include/linux/videodev2.h, line 1851, column 8
+
+class v4l2_ext_controls(Structure):
+    pass
+v4l2_ext_controls._align_ = 8
+v4l2_ext_controls._fields_ = [('count', c_uint), ('error_idx', c_uint), ('request_fd', c_int), ('reserved', c_uint * 1), ('controls', POINTER(v4l2_ext_control))]
+
+# file /usr/include/linux/videodev2.h, line 1927, column 8
+
+class v4l2_queryctrl(Structure):
+    pass
+v4l2_queryctrl._align_ = 4
+v4l2_queryctrl._fields_ = [('id', c_uint), ('type', c_uint), ('name', c_ubyte * 32), ('minimum', c_int), ('maximum', c_int), ('step', c_int), ('default_value', c_int), ('flags', c_uint), ('reserved', c_uint * 2)]
+
+# file /usr/include/linux/videodev2.h, line 1940, column 8
+
+class v4l2_query_ext_ctrl(Structure):
+    pass
+v4l2_query_ext_ctrl._align_ = 8
+v4l2_query_ext_ctrl._fields_ = [('id', c_uint), ('type', c_uint), ('name', c_char * 32), ('minimum', c_long), ('maximum', c_long), ('step', c_ulong), ('default_value', c_long), ('flags', c_uint), ('elem_size', c_uint), ('elems', c_uint), ('nr_of_dims', c_uint), ('dims', c_uint * 4), ('reserved', c_uint * 32)]
+
+# file /usr/include/linux/videodev2.h, line 1957, column 8
+
+class v4l2_querymenu(Structure):
+    pass
+v4l2_querymenu._align_ = 1
+v4l2_querymenu._fields_ = [('id', c_uint), ('index', c_uint), ('reserved', c_uint)]
+
+# file /usr/include/linux/videodev2.h, line 1995, column 8
+
+class v4l2_tuner(Structure):
+    pass
+v4l2_tuner._align_ = 4
+v4l2_tuner._fields_ = [('index', c_uint), ('name', c_ubyte * 32), ('type', c_uint), ('capability', c_uint), ('rangelow', c_uint), ('rangehigh', c_uint), ('rxsubchans', c_uint), ('audmode', c_uint), ('signal', c_int), ('afc', c_int), ('reserved', c_uint * 4)]
+
+# file /usr/include/linux/videodev2.h, line 2009, column 8
+
+class v4l2_modulator(Structure):
+    pass
+v4l2_modulator._align_ = 4
+v4l2_modulator._fields_ = [('index', c_uint), ('name', c_ubyte * 32), ('capability', c_uint), ('rangelow', c_uint), ('rangehigh', c_uint), ('txsubchans', c_uint), ('type', c_uint), ('reserved', c_uint * 3)]
+
+# file /usr/include/linux/videodev2.h, line 2052, column 8
+
+class v4l2_frequency(Structure):
+    pass
+v4l2_frequency._align_ = 4
+v4l2_frequency._fields_ = [('tuner', c_uint), ('type', c_uint), ('frequency', c_uint), ('reserved', c_uint * 8)]
+
+# file /usr/include/linux/videodev2.h, line 2063, column 8
+
+class v4l2_frequency_band(Structure):
+    pass
+v4l2_frequency_band._align_ = 4
+v4l2_frequency_band._fields_ = [('tuner', c_uint), ('type', c_uint), ('index', c_uint), ('capability', c_uint), ('rangelow', c_uint), ('rangehigh', c_uint), ('modulation', c_uint), ('reserved', c_uint * 9)]
+
+# file /usr/include/linux/videodev2.h, line 2074, column 8
+
+class v4l2_hw_freq_seek(Structure):
+    pass
+v4l2_hw_freq_seek._align_ = 4
+v4l2_hw_freq_seek._fields_ = [('tuner', c_uint), ('type', c_uint), ('seek_upward', c_uint), ('wrap_around', c_uint), ('spacing', c_uint), ('rangelow', c_uint), ('rangehigh', c_uint), ('reserved', c_uint * 5)]
+
+# file /usr/include/linux/videodev2.h, line 2089, column 8
+
+class v4l2_rds_data(Structure):
+    pass
+v4l2_rds_data._align_ = 1
+v4l2_rds_data._fields_ = [('lsb', c_ubyte), ('msb', c_ubyte), ('block', c_ubyte)]
+
+# file /usr/include/linux/videodev2.h, line 2109, column 8
+
+class v4l2_audio(Structure):
+    pass
+v4l2_audio._align_ = 4
+v4l2_audio._fields_ = [('index', c_uint), ('name', c_ubyte * 32), ('capability', c_uint), ('mode', c_uint), ('reserved', c_uint * 2)]
+
+# file /usr/include/linux/videodev2.h, line 2124, column 8
+
+class v4l2_audioout(Structure):
+    pass
+v4l2_audioout._align_ = 4
+v4l2_audioout._fields_ = [('index', c_uint), ('name', c_ubyte * 32), ('capability', c_uint), ('mode', c_uint), ('reserved', c_uint * 2)]
+
+# file /usr/include/linux/videodev2.h, line 2141, column 8
+
+class v4l2_enc_idx_entry(Structure):
+    pass
+v4l2_enc_idx_entry._align_ = 8
+v4l2_enc_idx_entry._fields_ = [('offset', c_ulong), ('pts', c_ulong), ('length', c_uint), ('flags', c_uint), ('reserved', c_uint * 2)]
+
+# file /usr/include/linux/videodev2.h, line 2150, column 8
+
+class v4l2_enc_idx(Structure):
+    pass
+v4l2_enc_idx._align_ = 8
+v4l2_enc_idx._fields_ = [('entries', c_uint), ('entries_cap', c_uint), ('reserved', c_uint * 4), ('entry', v4l2_enc_idx_entry * 64)]
+
+# file /usr/include/linux/videodev2.h, line 2166, column 8
+
+class v4l2_encoder_cmd(Structure):
+    pass
+v4l2_encoder_cmd._align_ = 4
+v4l2_encoder_cmd._fields_ = [('cmd', c_uint), ('flags', c_uint)]
+
+# file /usr/include/linux/videodev2.h, line 2202, column 8
+
+class v4l2_decoder_cmd(Structure):
+    pass
+v4l2_decoder_cmd._align_ = 8
+v4l2_decoder_cmd._fields_ = [('cmd', c_uint), ('flags', c_uint)]
+
+# file /usr/include/linux/videodev2.h, line 2235, column 8
+
+class v4l2_vbi_format(Structure):
+    pass
+v4l2_vbi_format._align_ = 4
+v4l2_vbi_format._fields_ = [('sampling_rate', c_uint), ('offset', c_uint), ('samples_per_line', c_uint), ('sample_format', c_uint), ('start', c_int * 2), ('count', c_uint * 2), ('flags', c_uint), ('reserved', c_uint * 2)]
+
+# file /usr/include/linux/videodev2.h, line 2263, column 8
+
+class v4l2_sliced_vbi_format(Structure):
+    pass
+v4l2_sliced_vbi_format._align_ = 4
+v4l2_sliced_vbi_format._fields_ = [('service_set', c_ushort), ('service_lines', c_ushort * 24 * 2), ('io_size', c_uint), ('reserved', c_uint * 2)]
+
+# file /usr/include/linux/videodev2.h, line 2287, column 8
+
+class v4l2_sliced_vbi_cap(Structure):
+    pass
+v4l2_sliced_vbi_cap._align_ = 4
+v4l2_sliced_vbi_cap._fields_ = [('service_set', c_ushort), ('service_lines', c_ushort * 24 * 2), ('type', c_uint), ('reserved', c_uint * 3)]
+
+# file /usr/include/linux/videodev2.h, line 2298, column 8
+
+class v4l2_sliced_vbi_data(Structure):
+    pass
+v4l2_sliced_vbi_data._align_ = 4
+v4l2_sliced_vbi_data._fields_ = [('id', c_uint), ('field', c_uint), ('line', c_uint), ('reserved', c_uint), ('data', c_ubyte * 48)]
+
+# file /usr/include/linux/videodev2.h, line 2328, column 8
+
+class v4l2_mpeg_vbi_itv0_line(Structure):
+    pass
+v4l2_mpeg_vbi_itv0_line._align_ = 1
+v4l2_mpeg_vbi_itv0_line._fields_ = [('id', c_ubyte), ('data', c_ubyte * 42)]
+
+# file /usr/include/linux/videodev2.h, line 2333, column 8
+
+class v4l2_mpeg_vbi_itv0(Structure):
+    pass
+v4l2_mpeg_vbi_itv0._align_ = 1
+v4l2_mpeg_vbi_itv0._fields_ = [('linemask', c_uint * 2), ('line', v4l2_mpeg_vbi_itv0_line * 35)]
+
+# file /usr/include/linux/videodev2.h, line 2338, column 8
+
+class v4l2_mpeg_vbi_ITV0(Structure):
+    pass
+v4l2_mpeg_vbi_ITV0._align_ = 1
+v4l2_mpeg_vbi_ITV0._fields_ = [('line', v4l2_mpeg_vbi_itv0_line * 36)]
+
+# file /usr/include/linux/videodev2.h, line 2345, column 8
+
+class v4l2_mpeg_vbi_fmt_ivtv(Structure):
+    pass
+v4l2_mpeg_vbi_fmt_ivtv._align_ = 1
+v4l2_mpeg_vbi_fmt_ivtv._fields_ = [('magic', c_ubyte * 4)]
+
+# file /usr/include/linux/videodev2.h, line 2365, column 8
+
+class v4l2_plane_pix_format(Structure):
+    pass
+v4l2_plane_pix_format._align_ = 1
+v4l2_plane_pix_format._fields_ = [('sizeimage', c_uint), ('bytesperline', c_uint), ('reserved', c_ushort * 6)]
+
+# file /usr/include/linux/videodev2.h, line 2387, column 8
+
+class v4l2_pix_format_mplane(Structure):
+    pass
+v4l2_pix_format_mplane._align_ = 1
+v4l2_pix_format_mplane._fields_ = [('width', c_uint), ('height', c_uint), ('pixelformat', c_uint), ('field', c_uint), ('colorspace', c_uint), ('plane_fmt', v4l2_plane_pix_format * 8), ('num_planes', c_ubyte), ('flags', c_ubyte), ('quantization', c_ubyte), ('xfer_func', c_ubyte), ('reserved', c_ubyte * 7)]
+
+# file /usr/include/linux/videodev2.h, line 2412, column 8
+
+class v4l2_sdr_format(Structure):
+    pass
+v4l2_sdr_format._align_ = 1
+v4l2_sdr_format._fields_ = [('pixelformat', c_uint), ('buffersize', c_uint), ('reserved', c_ubyte * 24)]
+
+# file /usr/include/linux/videodev2.h, line 2429, column 8
+
+class v4l2_meta_format(Structure):
+    pass
+v4l2_meta_format._align_ = 1
+v4l2_meta_format._fields_ = [('dataformat', c_uint), ('buffersize', c_uint), ('width', c_uint), ('height', c_uint), ('bytesperline', c_uint)]
+class _usr_include_linux_videodev2_h_509_2_(Union):
+    pass
+_usr_include_linux_videodev2_h_509_2_._align_ = 4
+_usr_include_linux_videodev2_h_509_2_._fields_ = []
+
+class v4l2_pix_format(Structure):
+    pass
+v4l2_pix_format._fields_ = [('width', c_uint), ('height', c_uint), ('pixelformat', c_uint), ('field', c_uint), ('bytesperline', c_uint), ('sizeimage', c_uint), ('colorspace', c_uint), ('priv', c_uint), ('flags', c_uint), ('union v4l2_pix_format::(anonymous at /usr/include/linux/videodev2.h:509:2)', _usr_include_linux_videodev2_h_509_2_), ('quantization', c_uint), ('xfer_func', c_uint)]
+
+class _usr_include_linux_videodev2_h_2397_3_(Union):
+    pass
+_usr_include_linux_videodev2_h_2397_3_._align_ = 1
+_usr_include_linux_videodev2_h_2397_3_._fields_ = []
+
+class v4l2_pix_format_mplane(Structure):
+    pass
+v4l2_pix_format_mplane._fields_ = [('width', c_uint), ('height', c_uint), ('pixelformat', c_uint), ('field', c_uint), ('colorspace', c_uint), ('plane_fmt', v4l2_plane_pix_format * 8), ('num_planes', c_ubyte), ('flags', c_ubyte), ('union v4l2_pix_format_mplane::(anonymous at /usr/include/linux/videodev2.h:2397:3)', _usr_include_linux_videodev2_h_2397_3_), ('quantization', c_ubyte), ('xfer_func', c_ubyte), ('reserved', c_ubyte * 7)]
+
+class v4l2_rect(Structure):
+    pass
+v4l2_rect._fields_ = [('left', c_int), ('top', c_int), ('width', c_uint), ('height', c_uint)]
+
+class v4l2_rect(Structure):
+    pass
+v4l2_rect._fields_ = [('left', c_int), ('top', c_int), ('width', c_uint), ('height', c_uint)]
+
+class v4l2_clip(Structure):
+    pass
+v4l2_clip._fields_ = [('c', v4l2_rect), ('next', POINTER(v4l2_clip))]
+
+class v4l2_window(Structure):
+    pass
+v4l2_window._fields_ = [('w', v4l2_rect), ('field', c_uint), ('chromakey', c_uint), ('clips', POINTER(v4l2_clip)), ('clipcount', c_uint), ('bitmap', POINTER(None)), ('global_alpha', c_ubyte)]
+
+class v4l2_vbi_format(Structure):
+    pass
+v4l2_vbi_format._fields_ = [('sampling_rate', c_uint), ('offset', c_uint), ('samples_per_line', c_uint), ('sample_format', c_uint), ('start', c_int * 2), ('count', c_uint * 2), ('flags', c_uint), ('reserved', c_uint * 2)]
+
+class v4l2_sliced_vbi_format(Structure):
+    pass
+v4l2_sliced_vbi_format._fields_ = [('service_set', c_ushort), ('service_lines', c_ushort * 24 * 2), ('io_size', c_uint), ('reserved', c_uint * 2)]
+
+class v4l2_sdr_format(Structure):
+    pass
+v4l2_sdr_format._fields_ = [('pixelformat', c_uint), ('buffersize', c_uint), ('reserved', c_ubyte * 24)]
+
+class v4l2_meta_format(Structure):
+    pass
+v4l2_meta_format._fields_ = [('dataformat', c_uint), ('buffersize', c_uint), ('width', c_uint), ('height', c_uint), ('bytesperline', c_uint)]
+
+class _usr_include_linux_videodev2_h_2451_2_(Union):
+    pass
+_usr_include_linux_videodev2_h_2451_2_._fields_ = [('pix', v4l2_pix_format), ('pix_mp', v4l2_pix_format_mplane), ('win', v4l2_window), ('vbi', v4l2_vbi_format), ('sliced', v4l2_sliced_vbi_format), ('sdr', v4l2_sdr_format), ('meta', v4l2_meta_format), ('raw_data', c_ubyte * 200)]
+# file /usr/include/linux/videodev2.h, line 2449, column 8
+
+class v4l2_format(Structure):
+    pass
+v4l2_format._align_ = 8
+v4l2_format._fields_ = [('type', c_uint), ('fmt', _usr_include_linux_videodev2_h_2451_2_)]
+class v4l2_fract(Structure):
+    pass
+v4l2_fract._fields_ = [('numerator', c_uint), ('denominator', c_uint)]
+
+class v4l2_captureparm(Structure):
+    pass
+v4l2_captureparm._fields_ = [('capability', c_uint), ('capturemode', c_uint), ('timeperframe', v4l2_fract), ('extendedmode', c_uint), ('readbuffers', c_uint), ('reserved', c_uint * 4)]
+
+class v4l2_fract(Structure):
+    pass
+v4l2_fract._fields_ = [('numerator', c_uint), ('denominator', c_uint)]
+
+class v4l2_outputparm(Structure):
+    pass
+v4l2_outputparm._fields_ = [('capability', c_uint), ('outputmode', c_uint), ('timeperframe', v4l2_fract), ('extendedmode', c_uint), ('writebuffers', c_uint), ('reserved', c_uint * 4)]
+
+class _usr_include_linux_videodev2_h_2467_2_(Union):
+    pass
+_usr_include_linux_videodev2_h_2467_2_._fields_ = [('capture', v4l2_captureparm), ('output', v4l2_outputparm), ('raw_data', c_ubyte * 200)]
+# file /usr/include/linux/videodev2.h, line 2465, column 8
+
+class v4l2_streamparm(Structure):
+    pass
+v4l2_streamparm._align_ = 4
+v4l2_streamparm._fields_ = [('type', c_uint), ('parm', _usr_include_linux_videodev2_h_2467_2_)]
+
+# file /usr/include/linux/videodev2.h, line 2488, column 8
+
+class v4l2_event_vsync(Structure):
+    pass
+v4l2_event_vsync._align_ = 1
+v4l2_event_vsync._fields_ = [('field', c_ubyte)]
+
+# file /usr/include/linux/videodev2.h, line 2499, column 8
+
+class v4l2_event_ctrl(Structure):
+    pass
+v4l2_event_ctrl._align_ = 8
+v4l2_event_ctrl._fields_ = [('changes', c_uint), ('type', c_uint), ('flags', c_uint), ('minimum', c_int), ('maximum', c_int), ('step', c_int), ('default_value', c_int)]
+
+# file /usr/include/linux/videodev2.h, line 2513, column 8
+
+class v4l2_event_frame_sync(Structure):
+    pass
+v4l2_event_frame_sync._align_ = 4
+v4l2_event_frame_sync._fields_ = [('frame_sequence', c_uint)]
+
+# file /usr/include/linux/videodev2.h, line 2519, column 8
+
+class v4l2_event_src_change(Structure):
+    pass
+v4l2_event_src_change._align_ = 4
+v4l2_event_src_change._fields_ = [('changes', c_uint)]
+
+# file /usr/include/linux/videodev2.h, line 2532, column 8
+
+class v4l2_event_motion_det(Structure):
+    pass
+v4l2_event_motion_det._align_ = 4
+v4l2_event_motion_det._fields_ = [('flags', c_uint), ('frame_sequence', c_uint), ('region_mask', c_uint)]
+class v4l2_event_vsync(Structure):
+    pass
+v4l2_event_vsync._fields_ = [('field', c_ubyte)]
+
+class _usr_include_linux_videodev2_h_2502_2_(Union):
+    pass
+_usr_include_linux_videodev2_h_2502_2_._align_ = 8
+_usr_include_linux_videodev2_h_2502_2_._fields_ = []
+
+class v4l2_event_ctrl(Structure):
+    pass
+v4l2_event_ctrl._fields_ = [('changes', c_uint), ('type', c_uint), ('union v4l2_event_ctrl::(anonymous at /usr/include/linux/videodev2.h:2502:2)', _usr_include_linux_videodev2_h_2502_2_), ('flags', c_uint), ('minimum', c_int), ('maximum', c_int), ('step', c_int), ('default_value', c_int)]
+
+class v4l2_event_frame_sync(Structure):
+    pass
+v4l2_event_frame_sync._fields_ = [('frame_sequence', c_uint)]
+
+class v4l2_event_src_change(Structure):
+    pass
+v4l2_event_src_change._fields_ = [('changes', c_uint)]
+
+class v4l2_event_motion_det(Structure):
+    pass
+v4l2_event_motion_det._fields_ = [('flags', c_uint), ('frame_sequence', c_uint), ('region_mask', c_uint)]
+
+class _usr_include_linux_videodev2_h_2540_2_(Union):
+    pass
+_usr_include_linux_videodev2_h_2540_2_._fields_ = [('vsync', v4l2_event_vsync), ('ctrl', v4l2_event_ctrl), ('frame_sync', v4l2_event_frame_sync), ('src_change', v4l2_event_src_change), ('motion_det', v4l2_event_motion_det), ('data', c_ubyte * 64)]
+
+class timespec(Structure):
+    pass
+timespec._fields_ = [('tv_sec', c_long), ('tv_nsec', c_long)]
+# file /usr/include/linux/videodev2.h, line 2538, column 8
+
+class v4l2_event(Structure):
+    pass
+v4l2_event._align_ = 8
+v4l2_event._fields_ = [('type', c_uint), ('u', _usr_include_linux_videodev2_h_2540_2_), ('pending', c_uint), ('sequence', c_uint), ('timestamp', timespec), ('id', c_uint), ('reserved', c_uint * 8)]
+
+# file /usr/include/linux/videodev2.h, line 2558, column 8
+
+class v4l2_event_subscription(Structure):
+    pass
+v4l2_event_subscription._align_ = 4
+v4l2_event_subscription._fields_ = [('type', c_uint), ('id', c_uint), ('flags', c_uint), ('reserved', c_uint * 5)]
+
+# file /usr/include/linux/videodev2.h, line 2583, column 8
+
+class v4l2_dbg_match(Structure):
+    pass
+v4l2_dbg_match._align_ = 1
+v4l2_dbg_match._fields_ = [('type', c_uint)]
+class _usr_include_linux_videodev2_h_2585_2_(Union):
+    pass
+_usr_include_linux_videodev2_h_2585_2_._align_ = 4
+_usr_include_linux_videodev2_h_2585_2_._fields_ = []
+
+class v4l2_dbg_match(Structure):
+    pass
+v4l2_dbg_match._fields_ = [('type', c_uint), ('union v4l2_dbg_match::(anonymous at /usr/include/linux/videodev2.h:2585:2)', _usr_include_linux_videodev2_h_2585_2_)]
+# file /usr/include/linux/videodev2.h, line 2591, column 8
+
+class v4l2_dbg_register(Structure):
+    pass
+v4l2_dbg_register._align_ = 1
+v4l2_dbg_register._fields_ = [('match', v4l2_dbg_match), ('size', c_uint), ('reg', c_ulong), ('val', c_ulong)]
+class _usr_include_linux_videodev2_h_2585_2_(Union):
+    pass
+_usr_include_linux_videodev2_h_2585_2_._align_ = 4
+_usr_include_linux_videodev2_h_2585_2_._fields_ = []
+
+class v4l2_dbg_match(Structure):
+    pass
+v4l2_dbg_match._fields_ = [('type', c_uint), ('union v4l2_dbg_match::(anonymous at /usr/include/linux/videodev2.h:2585:2)', _usr_include_linux_videodev2_h_2585_2_)]
+# file /usr/include/linux/videodev2.h, line 2602, column 8
+
+class v4l2_dbg_chip_info(Structure):
+    pass
+v4l2_dbg_chip_info._align_ = 1
+v4l2_dbg_chip_info._fields_ = [('match', v4l2_dbg_match), ('name', c_char * 32), ('flags', c_uint), ('reserved', c_uint * 32)]
+class _usr_include_linux_videodev2_h_509_2_(Union):
+    pass
+_usr_include_linux_videodev2_h_509_2_._align_ = 4
+_usr_include_linux_videodev2_h_509_2_._fields_ = []
+
+class v4l2_pix_format(Structure):
+    pass
+v4l2_pix_format._fields_ = [('width', c_uint), ('height', c_uint), ('pixelformat', c_uint), ('field', c_uint), ('bytesperline', c_uint), ('sizeimage', c_uint), ('colorspace', c_uint), ('priv', c_uint), ('flags', c_uint), ('union v4l2_pix_format::(anonymous at /usr/include/linux/videodev2.h:509:2)', _usr_include_linux_videodev2_h_509_2_), ('quantization', c_uint), ('xfer_func', c_uint)]
+
+class _usr_include_linux_videodev2_h_2397_3_(Union):
+    pass
+_usr_include_linux_videodev2_h_2397_3_._align_ = 1
+_usr_include_linux_videodev2_h_2397_3_._fields_ = []
+
+class v4l2_pix_format_mplane(Structure):
+    pass
+v4l2_pix_format_mplane._fields_ = [('width', c_uint), ('height', c_uint), ('pixelformat', c_uint), ('field', c_uint), ('colorspace', c_uint), ('plane_fmt', v4l2_plane_pix_format * 8), ('num_planes', c_ubyte), ('flags', c_ubyte), ('union v4l2_pix_format_mplane::(anonymous at /usr/include/linux/videodev2.h:2397:3)', _usr_include_linux_videodev2_h_2397_3_), ('quantization', c_ubyte), ('xfer_func', c_ubyte), ('reserved', c_ubyte * 7)]
+
+class v4l2_rect(Structure):
+    pass
+v4l2_rect._fields_ = [('left', c_int), ('top', c_int), ('width', c_uint), ('height', c_uint)]
+
+class v4l2_rect(Structure):
+    pass
+v4l2_rect._fields_ = [('left', c_int), ('top', c_int), ('width', c_uint), ('height', c_uint)]
+
+class v4l2_clip(Structure):
+    pass
+v4l2_clip._fields_ = [('c', v4l2_rect), ('next', POINTER(v4l2_clip))]
+
+class v4l2_window(Structure):
+    pass
+v4l2_window._fields_ = [('w', v4l2_rect), ('field', c_uint), ('chromakey', c_uint), ('clips', POINTER(v4l2_clip)), ('clipcount', c_uint), ('bitmap', POINTER(None)), ('global_alpha', c_ubyte)]
+
+class v4l2_vbi_format(Structure):
+    pass
+v4l2_vbi_format._fields_ = [('sampling_rate', c_uint), ('offset', c_uint), ('samples_per_line', c_uint), ('sample_format', c_uint), ('start', c_int * 2), ('count', c_uint * 2), ('flags', c_uint), ('reserved', c_uint * 2)]
+
+class v4l2_sliced_vbi_format(Structure):
+    pass
+v4l2_sliced_vbi_format._fields_ = [('service_set', c_ushort), ('service_lines', c_ushort * 24 * 2), ('io_size', c_uint), ('reserved', c_uint * 2)]
+
+class v4l2_sdr_format(Structure):
+    pass
+v4l2_sdr_format._fields_ = [('pixelformat', c_uint), ('buffersize', c_uint), ('reserved', c_ubyte * 24)]
+
+class v4l2_meta_format(Structure):
+    pass
+v4l2_meta_format._fields_ = [('dataformat', c_uint), ('buffersize', c_uint), ('width', c_uint), ('height', c_uint), ('bytesperline', c_uint)]
+
+class _usr_include_linux_videodev2_h_2451_2_(Union):
+    pass
+_usr_include_linux_videodev2_h_2451_2_._fields_ = [('pix', v4l2_pix_format), ('pix_mp', v4l2_pix_format_mplane), ('win', v4l2_window), ('vbi', v4l2_vbi_format), ('sliced', v4l2_sliced_vbi_format), ('sdr', v4l2_sdr_format), ('meta', v4l2_meta_format), ('raw_data', c_ubyte * 200)]
+
+class v4l2_format(Structure):
+    pass
+v4l2_format._fields_ = [('type', c_uint), ('fmt', _usr_include_linux_videodev2_h_2451_2_)]
+# file /usr/include/linux/videodev2.h, line 2625, column 8
+
+class v4l2_create_buffers(Structure):
+    pass
+v4l2_create_buffers._align_ = 8
+v4l2_create_buffers._fields_ = [('index', c_uint), ('count', c_uint), ('memory', c_uint), ('format', v4l2_format), ('capabilities', c_uint), ('flags', c_uint), ('max_num_buffers', c_uint), ('reserved', c_uint * 5)]
+
+# file /usr/include/linux/videodev2.h, line 2643, column 8
+
+class v4l2_remove_buffers(Structure):
+    pass
+v4l2_remove_buffers._align_ = 4
+v4l2_remove_buffers._fields_ = [('index', c_uint), ('count', c_uint), ('type', c_uint), ('reserved', c_uint * 13)]

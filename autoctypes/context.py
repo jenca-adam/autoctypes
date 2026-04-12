@@ -12,11 +12,12 @@ class Library:
 
 
 class Context:
-    """dummy"""
-
     def __init__(self, files, libs):
         self.comment = True
-
+        self.files = files
+        self.libs = libs
     def find_lib(self, func):
         # TODO
+        for lib in self.libs:
+            pass
         return Library("DUMMYLIB.so")

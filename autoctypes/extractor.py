@@ -4,6 +4,7 @@ Extracts data from C header files
 
 import warnings
 from clang import cindex
+import os 
 from . import ctypes_ext
 from .context import Context
 from .util import make_identifier
@@ -28,7 +29,7 @@ def location_to_str(loc):
 class Extractor:
     """Extracts data from C header files"""
 
-    def __init__(self, path, context):
+    def __init__(self, path, context, skip_includes=False):
         self.tu = cindex.TranslationUnit.from_source(path)
         self.cursor = self.tu.cursor
         self.context = context
@@ -36,6 +37,9 @@ class Extractor:
         self.structs = {}
         self.elaborated_cache = {}
         self.processing = []
+        self.skip_includes = skip_includes
+
+        self.target_file = os.path.abspath(path)
 
     def extract_code_generators(self):
         """Generates CodeGenerators from a C header file"""
@@ -46,7 +50,12 @@ class Extractor:
             cindex.CursorKind.FUNCTION_DECL: self._handle_cursor_function,
         }
         for child in self.cursor.get_children():
+            if self.skip_includes and child.location.file:
+                child_file = os.path.abspath(child.location.file.name)
+                if child_file != self.target_file:
+                    continue
             handler = cursor_handlers.get(child.kind)
+
             if handler:
                 yield handler(child)
 
@@ -200,7 +209,10 @@ class Extractor:
 
     def _handle_type_functionproto(self, tp, loc, curs):
         restype = self.get_ctypes_type(tp.get_result(), loc=loc)
-        argtypes = [self.get_ctypes_type(arg, loc=loc) for arg in tp.argument_types()]
+        if (tp.kind==cindex.TypeKind.FUNCTIONNOPROTO):
+            argtypes = []    
+        else:
+            argtypes = [self.get_ctypes_type(arg, loc=loc) for arg in tp.argument_types()]
         return ctypes_ext.make_func(
             curs.spelling if curs else "ANONYMOUS",
             restype,
