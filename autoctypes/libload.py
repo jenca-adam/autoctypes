@@ -1,5 +1,5 @@
-import ctypes
-import ctypes.util
+from ctypes import CDLL
+from ctypes.util import find_library
 import warnings
 import sys
 
@@ -7,9 +7,9 @@ import sys
 ### TO BE INCLUDED IN THE GENERATED CODE
 def _actp_libload(libname):
     if sys.platform in ["linux", "darwin"]:
-        return ctypes.CDLL(ctypes.util.find_library(libname))
+        return CDLL(libname)
     if sys.platform == "win32":
-        return ctypes.CDLL(ctypes.util.find_library(f"{libname.split('.')[0]}.dll"))
+        return CDLL(find_library(f"{libname.split('.')[0]}.dll"))
     raise RuntimeError(f"unsupported OS: {sys.platform}")
 
 

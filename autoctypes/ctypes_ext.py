@@ -365,3 +365,4 @@ c_int32_FORCE = make_forced_type("c_int32", int)
 c_uint32_FORCE = make_forced_type("c_uint32", int)
 c_int64_FORCE = make_forced_type("c_int64", int)
 c_uint64_FORCE = make_forced_type("c_uint64", int)
+TYPE_EXTENSIONS = [c_float128, c_half, c_int128, c_uint128]

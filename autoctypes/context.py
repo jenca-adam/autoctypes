@@ -19,10 +19,9 @@ class Context:
         self.type_hints = type_hints
         self.files = files
         self.libs = libs
-        self._taken_struct_names = set()
+        self._taken_names = set()
 
     def find_lib(self, func):
-        # TODO
         for lib in self.libs:
             try:
                 lib.dll[func]

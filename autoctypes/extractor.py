@@ -7,7 +7,7 @@ from clang import cindex
 import os
 from . import ctypes_ext
 from .context import Context
-from .util import make_identifier
+from .util import make_identifier, get_root_type
 from .code_generator import (
     CodeGenerator,
     StructCodeGenerator,
@@ -174,7 +174,7 @@ class Extractor:
     def _handle_type_array(self, tp, loc, *_):
         size = tp.get_array_size()
         el_tp = self.get_ctypes_type(tp.get_array_element_type(), loc=loc)
-        return ctypes_ext.mk_array(el_tp, size)
+        return ctypes_ext.mk_array(el_tp, max(size,0))
 
     def _handle_type_pointer(self, tp, loc, curs):
         pointee = tp.get_pointee()
@@ -231,9 +231,7 @@ class Extractor:
         ]
         localdefs = []
         for index, (spelling, ctp, *bw) in enumerate(fields):
-            needsdef = getattr(ctp, "_NEEDSDEF", False)
-            if needsdef == True:
-                needsdef = ctp
+            needsdef = get_root_type(ctp)
             if needsdef:
                 localdefs.append(CodeGenerator.from_ctype(needsdef, self.context))
                 fields[index] = (

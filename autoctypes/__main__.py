@@ -1,0 +1,33 @@
+from . import code_generator, reconstruct, context, extractor, ctypes_ext
+import click
+
+
+@click.command()
+@click.option("--source", "-s", required=True)
+@click.option("--output", "-o", required=True)
+@click.option("--lib", "-l", multiple=True)
+@click.option("--type-hints/--no-type-hints", "-t/-T", is_flag=True, default=True)
+@click.option("--comments/--no-comments", "-c/-C", is_flag=True, default=True)
+@click.option("--includes/--no-includes", "-i/-I", is_flag=True, default=False)
+def main(source, output, lib, type_hints, comments, includes):
+    ctx = context.Context([], [context.Library(l) for l in lib], comments, type_hints)
+    head = code_generator.CompositorCodeGenerator(
+        (
+            code_generator.ImportCodeGenerator(ctx),
+            code_generator.CtxSetupCodeGenerator(ctx),
+            *(
+                code_generator.CoPyCodeGenerator(ext, ctx)
+                for ext in ctypes_ext.TYPE_EXTENSIONS
+            ),
+        ),
+        ctx,
+    )
+    e = extractor.Extractor(source, ctx, not includes)
+    body = code_generator.CompositorCodeGenerator(e.extract_code_generators(), ctx)
+    with open(output, "w") as f:
+        f.write(reconstruct.stringify_code_generator(head))
+        f.write(reconstruct.stringify_code_generator(body))
+
+
+if __name__ == "__main__":
+    main()

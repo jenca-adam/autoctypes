@@ -1,12 +1,14 @@
 import ast
 import warnings
 import inspect
+from .util import get_root_type
 from .reconstruct import (
     reconstruct_code_generator,
     stringify_code_generator,
     reconstruct_type,
     reconstruct_type_hint,
 )
+from . import libload
 from .ctypes_ext import *
 
 
@@ -31,7 +33,20 @@ class CodeGenerator:
         warnings.warn(
             UserWarning(f"can't generate {ctype.__qualname__}, not including")
         )
+        breakpoint()
         return DummyCodeGenerator(ctype, *args, **kwargs)
+
+
+class CompositorCodeGenerator(CodeGenerator):
+    def __init__(self, gen, ctx):
+        self.ctx = ctx
+        self.gen = gen
+
+    def __actp_code_generator__(self):
+        body = []
+        for cg in self.gen:
+            body.extend(reconstruct_code_generator(cg))
+        return body
 
 
 class DummyCodeGenerator(CodeGenerator):
@@ -82,8 +97,8 @@ class StructCodeGenerator(CodeGenerator):
 
     def __actp_code_generator__(self, *args, comment_override=None, **kwargs):
         taken = (
-            self.ctx._taken_struct_names
-            if self.ctx._taken_struct_names is not None
+            self.ctx._taken_names
+            if self.ctx._taken_names is not None
             else set()
         )
         body = [
@@ -149,6 +164,8 @@ class FuncCodeGenerator(CodeGenerator):
         self.ctx = ctx
 
     def __actp_code_generator__(self, *args, comment_override=None, **kwargs):
+
+        body = []
         lib = self.ctx.find_lib(self.func.__qualname__)
         if not lib:
             warnings.warn(
@@ -163,8 +180,13 @@ class FuncCodeGenerator(CodeGenerator):
                     f"\n#FIXME: couldn't generate {self.func.__qualname__}: not found in any libraries"
                 )
             ]
+        self.ctx._taken_names.add(self.func.__qualname__)
+        for req_type in (*self.func._argtypes, self.func._restype):
+            to_define = get_root_type(req_type) 
+            if to_define and to_define.__qualname__ not in self.ctx._taken_names:
+                body.extend(CodeGenerator.from_ctype(to_define, self.ctx).__actp_code_generator__(*args, comment_override, **kwargs))
+
         libid = lib.id
-        body = []
         comment = comment_override if comment_override is not None else self.ctx.comment
         if comment:
             body.append(ast.Name(f"\n# {self.func._loc}"))  # -||-
@@ -212,6 +234,9 @@ class TypedefCodeGenerator(CodeGenerator):
 
     def __actp_code_generator__(self, *args, comment_override=None, **kwargs):
         body = []
+        to_define = get_root_type(self.ctype)
+        if to_define and to_define.__qualname__ not in self.ctx._taken_names:
+            body.extend(CodeGenerator.from_ctype(to_define, self.ctx).__actp_code_generator__(*args, comment_override, **kwargs))
         comment = comment_override if comment_override is not None else self.ctx.comment
         if comment:
             body.append(ast.Name(f"\n# {self.loc}"))
@@ -233,35 +258,49 @@ class CoPyCodeGenerator(CodeGenerator):
         if comment:
             body.append(ast.Name("\n# helper code included by autoctypes"))
         body.append(self.ast)
+        body.append(ast.Name('\n'))
         return body
 
 
-class SetupCodeGenerator(CodeGenerator):
+class ImportCodeGenerator(CodeGenerator):
     def __init__(self, ctx):
         self.ctx = ctx
 
     def __actp_code_generator__(self, *args, comment_override=None, **kwargs):
         body = []
         comment = comment_override if comment_override is not None else self.ctx.comment
-        body.append(astImportFrom("__future__", [ast.alias("annotations")]))
-        body.append(
-            ast.ImportFrom(
-                "typing", [ast.alias("TYPE_CHECKING"), ast.alias("Callable")]
+        if self.ctx.type_hints:
+            body.append(ast.ImportFrom("__future__", [ast.alias("annotations")]))
+            body.append(
+                ast.ImportFrom(
+                    "typing", [ast.alias("TYPE_CHECKING"), ast.alias("Callable")]
+                )
             )
-        )
+            body.append(ast.ImportFrom("ctypes", [ast.alias("_Pointer")]))
         body.append(ast.ImportFrom("ctypes", [ast.alias("*")]))
-        body.append(ast.ImportFrom("ctypes", [ast.alias("_Pointer")]))
         body.append(ast.ImportFrom("ctypes.util", [ast.alias("find_library")]))
+        body.append(ast.Import([ast.alias("struct")]))
+        body.append(ast.Import([ast.alias("sys")]))
         return body
 
 
-class CompositorCodeGenerator(CodeGenerator):
-    def __init__(self, gen, ctx):
+class CtxSetupCodeGenerator(CodeGenerator):
+    def __init__(self, ctx):
         self.ctx = ctx
-        self.gen = gen
 
-    def __actp_code_generator__(self):
+    def __actp_code_generator__(self, *args, **kwargs):
         body = []
-        for df in self.gen:
-            body.extend(reconstruct_code_generator(body))
+        body.extend(
+            reconstruct_code_generator(
+                CoPyCodeGenerator(libload._actp_libload, self.ctx)
+            )
+        )
+        for lib in self.ctx.libs:
+            body.append(
+                ast.Assign(
+                    [ast.Name(lib.id)],
+                    ast.Call(ast.Name("_actp_libload"), [ast.Constant(lib.name)]),
+                    lineno=0
+                )
+            )
         return body
