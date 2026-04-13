@@ -60,7 +60,7 @@ class Extractor:
                 yield handler(child)
 
     def _handle_cursor_mk_code_generator(self, curs):
-        return CodeGenerator.from_ctype(self.get_ctypes_type(curs=curs))
+        return CodeGenerator.from_ctype(self.get_ctypes_type(curs=curs), self.context)
 
     def _handle_cursor_typedef(self, curs):
         return TypedefCodeGenerator(
@@ -73,7 +73,7 @@ class Extractor:
         )
 
     def _handle_cursor_function(self, curs):
-        return FuncCodeGenerator(self.get_ctypes_type(curs=curs))
+        return FuncCodeGenerator(self.get_ctypes_type(curs=curs), self.context)
 
     def get_ctypes_type(self, tp=None, /, loc=None, curs=None):
         """Converts a libclang type to a ctypes type"""
@@ -94,22 +94,23 @@ class Extractor:
             cindex.TypeKind.FLOAT: self._handle_type_primitive,
             cindex.TypeKind.FLOAT128: self._handle_type_primitive,
             cindex.TypeKind.HALF: self._handle_type_primitive,
-            cindex.TypeKind.INT: self._handle_type_primitive,
+            cindex.TypeKind.INT: self._handle_type_sized_int,
             cindex.TypeKind.INT128: self._handle_type_primitive,
-            cindex.TypeKind.LONG: self._handle_type_primitive,
+            cindex.TypeKind.LONG: self._handle_type_sized_int,
             cindex.TypeKind.LONGDOUBLE: self._handle_type_primitive,
-            cindex.TypeKind.LONGLONG: self._handle_type_primitive,
+            cindex.TypeKind.LONGLONG: self._handle_type_sized_int,
             cindex.TypeKind.SCHAR: self._handle_type_primitive,
             cindex.TypeKind.SHORT: self._handle_type_primitive,
             cindex.TypeKind.UCHAR: self._handle_type_primitive,
-            cindex.TypeKind.UINT: self._handle_type_primitive,
+            cindex.TypeKind.UINT: self._handle_type_sized_uint,
             cindex.TypeKind.UINT128: self._handle_type_primitive,
-            cindex.TypeKind.ULONG: self._handle_type_primitive,
-            cindex.TypeKind.ULONGLONG: self._handle_type_primitive,
+            cindex.TypeKind.ULONG: self._handle_type_sized_uint,
+            cindex.TypeKind.ULONGLONG: self._handle_type_sized_uint,
             cindex.TypeKind.USHORT: self._handle_type_primitive,
             cindex.TypeKind.WCHAR: self._handle_type_primitive,
             cindex.TypeKind.CONSTANTARRAY: self._handle_type_array,
             cindex.TypeKind.VARIABLEARRAY: self._handle_type_array,
+            cindex.TypeKind.INCOMPLETEARRAY: self._handle_type_array,
             cindex.TypeKind.POINTER: self._handle_type_pointer,
             cindex.TypeKind.ENUM: self._handle_type_enum,
             cindex.TypeKind.RECORD: self._handle_type_record,
@@ -118,19 +119,36 @@ class Extractor:
             cindex.TypeKind.ELABORATED: self._handle_type_elaborated,
             cindex.TypeKind.INVALID: self._handle_type_invalid,
             cindex.TypeKind.VOID: self._handle_type_primitive,
+            cindex.TypeKind.TYPEDEF: self._handle_type_elaborated,
         }
 
         handler = type_handlers.get(tp.kind, self._handle_type_unknown)
         return handler(tp, loc, curs)
 
+    def _handle_type_sized_int(self, tp, *_):
+        mapping = {
+            2: ctypes_ext.c_int16_FORCE,
+            4: ctypes_ext.c_int32_FORCE,
+            8: ctypes_ext.c_int64_FORCE,
+        }
+        return mapping.get(tp.get_size(), ctypes_ext.c_int32_FORCE)
+
+    def _handle_type_sized_uint(self, tp, *_):
+        mapping = {
+            2: ctypes_ext.c_uint16_FORCE,
+            4: ctypes_ext.c_uint32_FORCE,
+            8: ctypes_ext.c_uint64_FORCE,
+        }
+        return mapping.get(tp.get_size(), ctypes_ext.c_uint32_FORCE)
+
     def _handle_type_primitive(self, tp, *_):
         mapping = {
             cindex.TypeKind.BOOL: ctypes_ext.c_bool,
-            cindex.TypeKind.CHAR16: ctypes_ext.c_uint16,
-            cindex.TypeKind.CHAR32: ctypes_ext.c_uint32,
+            cindex.TypeKind.CHAR16: ctypes_ext.c_uint16_FORCE,
+            cindex.TypeKind.CHAR32: ctypes_ext.c_uint32_FORCE,
             cindex.TypeKind.CHAR_S: ctypes_ext.c_char,
             cindex.TypeKind.CHAR_U: ctypes_ext.c_ubyte,
-            cindex.TypeKind.COMPLEX: ctypes_ext.c_complex,
+            cindex.TypeKind.COMPLEX: ctypes_ext.c_float_complex,
             cindex.TypeKind.DOUBLE: ctypes_ext.c_double,
             cindex.TypeKind.FLOAT: ctypes_ext.c_float,
             cindex.TypeKind.FLOAT128: ctypes_ext.c_float128,
@@ -196,6 +214,11 @@ class Extractor:
             )
             for field in fielditer
         ]
+        for index, field in enumerate(fielditer):
+            width = field.get_bitfield_width()
+            if width > 0:
+                fields[index] = (*fields[index], width)
+
         self.processing.pop()
         anon = [
             make_identifier(
@@ -207,12 +230,12 @@ class Extractor:
             if field.is_anonymous_record_decl()
         ]
         localdefs = []
-        for index, (spelling, ctp) in enumerate(fields):
+        for index, (spelling, ctp, *bw) in enumerate(fields):
             needsdef = getattr(ctp, "_NEEDSDEF", False)
             if needsdef == True:
                 needsdef = ctp
             if needsdef:
-                localdefs.append(CodeGenerator.from_ctype(needsdef))
+                localdefs.append(CodeGenerator.from_ctype(needsdef, self.context))
                 fields[index] = (
                     spelling,
                     (
@@ -221,6 +244,7 @@ class Extractor:
                         or issubclass(ctp, ctypes_ext.EARRAY)
                         else ctypes_ext.mk_elaborated(needsdef.__qualname__, needsdef)
                     ),
+                    *bw,
                 )  # not _handle_type_elaborated because of the canonical check
         return ctypes_ext.make_struct(
             name,

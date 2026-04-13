@@ -1,4 +1,3 @@
-# pylint: disable=unused-wildcard-import, wildcard-import, invalid-name, too-few-public-methods, protected-access, unused-argument
 import ast
 import warnings
 import inspect
@@ -22,13 +21,13 @@ class CodeGenerator:
         raise NotImplementedError("abstract class")
 
     @classmethod
-    def from_ctype(cls, ctype, *args, **kwargs):
+    def from_ctype(cls, ctype, ctx, *args, **kwargs):
         if issubclass(ctype, ESTRUCT):
-            return StructCodeGenerator(ctype, *args, **kwargs)
+            return StructCodeGenerator(ctype, ctx, *args, **kwargs)
         if issubclass(ctype, EFUNC):  # i regret my earlier decisions :(
-            return FuncCodeGenerator(ctype, *args, **kwargs)
+            return FuncCodeGenerator(ctype, ctx, *args, **kwargs)
         if issubclass(ctype, EELABORATED):
-            return cls.from_ctype(ctype._original)
+            return cls.from_ctype(ctype._original, ctx)
         warnings.warn(
             UserWarning(f"can't generate {ctype.__qualname__}, not including")
         )
@@ -45,17 +44,22 @@ class DummyCodeGenerator(CodeGenerator):
         self.ctype = ctype
 
     def __actp_code_generator__(self, *args, **kwargs):
-        return [ast.Name(f"\n#FIXME: couldn't generate: {self.ctype.__qualname__}")]
+        return [
+            ast.Name(
+                f"\n#FIXME: couldn't generate: {self.ctype.__qualname__}. No generator found"
+            )
+        ]
 
 
 class StructCodeGenerator(CodeGenerator):
-    def __init__(self, cstruct):
+    def __init__(self, cstruct, ctx):
         self.struct = cstruct
+        self.ctx = ctx
 
     def _gen_type_hints(self, type_check_guard=True):
         hints = []
         for field in self.struct._fields_:
-            field_name, field_type = field
+            field_name, field_type, *bw = field
             hints.append(
                 ast.AnnAssign(
                     target=ast.Name(field_name),
@@ -66,18 +70,24 @@ class StructCodeGenerator(CodeGenerator):
             )
             if field_name in self.struct._anonymous_:
                 hints.extend(
-                    CodeGenerator.from_ctype(field_type)._gen_type_hints(False)
+                    CodeGenerator.from_ctype(field_type, self.ctx)._gen_type_hints(
+                        False
+                    )
                 )
+        if not hints:
+            hints.append(ast.Pass())
         if type_check_guard:
             return [ast.If(ast.Name("TYPE_CHECKING"), hints)]
         return hints
 
-    def __actp_code_generator__(
-        self, *args, taken=None, comment_override=None, type_hints=False, **kwargs
-    ):
-        taken = taken if taken is not None else set()
+    def __actp_code_generator__(self, *args, comment_override=None, **kwargs):
+        taken = (
+            self.ctx._taken_struct_names
+            if self.ctx._taken_struct_names is not None
+            else set()
+        )
         body = [
-            reconstruct_code_generator(locdef, taken=taken, type_hints=type_hints)
+            reconstruct_code_generator(locdef, self.ctx)
             for locdef in self.struct._localdefs
             if getattr(getattr(locdef, "struct", None), "__qualname__", None)
             not in taken
@@ -85,15 +95,11 @@ class StructCodeGenerator(CodeGenerator):
         if self.struct.__qualname__ in taken:
             return body
         taken.add(self.struct.__qualname__)
-        if not type_hints:
+        if not self.ctx.type_hints:
             class_body = [ast.Pass()]
         else:
             class_body = self._gen_type_hints()
-        comment = (
-            comment_override
-            if comment_override is not None
-            else self.struct._ctx.comment
-        )
+        comment = comment_override if comment_override is not None else self.ctx.comment
         if comment:
             body.append(ast.Name(f"\n# {self.struct._loc}"))  # ugly hack
         body.append(
@@ -109,7 +115,7 @@ class StructCodeGenerator(CodeGenerator):
         fields_assign_elts = [
             ast.Tuple(
                 [ast.Constant(fld[0]), reconstruct_type(fld[1])]
-                + ([ast.Const(fld[2])] if len(fld) > 2 else [])
+                + ([ast.Constant(fld[2])] if len(fld) > 2 else [])
             )
             for fld in self.struct._fields_
         ]
@@ -138,25 +144,28 @@ class StructCodeGenerator(CodeGenerator):
 
 
 class FuncCodeGenerator(CodeGenerator):
-    def __init__(self, func):
+    def __init__(self, func, ctx):
         self.func = func
+        self.ctx = ctx
 
     def __actp_code_generator__(self, *args, comment_override=None, **kwargs):
-        lib = self.func._ctx.find_lib(self.func.__qualname__)
+        lib = self.ctx.find_lib(self.func.__qualname__)
         if not lib:
             warnings.warn(
                 UserWarning(
-                    f"self.function {self.func.__qualname__}"
+                    f"function {self.func.__qualname__} "
                     "not found in any of the provided libraries."
                     f"Types won't be assigned. (code_generator at {self.func._loc})"
                 )
             )
-            return ()
+            return [
+                ast.Name(
+                    f"\n#FIXME: couldn't generate {self.func.__qualname__}: not found in any libraries"
+                )
+            ]
         libid = lib.id
         body = []
-        comment = (
-            comment_override if comment_override is not None else self.func._ctx.comment
-        )
+        comment = comment_override if comment_override is not None else self.ctx.comment
         if comment:
             body.append(ast.Name(f"\n# {self.func._loc}"))  # -||-
         if (
@@ -165,6 +174,17 @@ class FuncCodeGenerator(CodeGenerator):
             libfn = ast.Attribute(ast.Name(libid), self.func.__qualname__)
         else:
             libfn = ast.Subscript(ast.Name(libid), ast.Constant(self.func.__qualname__))
+
+        if self.ctx.type_hints:
+            hint = [
+                ast.AnnAssign(
+                    target=libfn,
+                    annotation=reconstruct_type_hint(self.func),
+                    value=0,
+                    simple=1,
+                )
+            ]
+            body.append(ast.If(ast.Name("TYPE_CHECKING"), hint))
         body.append(
             ast.Assign(
                 [ast.Attribute(libfn, "argtypes")],
@@ -202,10 +222,10 @@ class TypedefCodeGenerator(CodeGenerator):
 
 
 class CoPyCodeGenerator(CodeGenerator):
-    def __init__(self, cls, ctx):
-        self.cls = cls
+    def __init__(self, obj, ctx):
+        self.obj = obj
         self.ctx = ctx
-        self.ast = ast.parse(inspect.getsource(cls))
+        self.ast = ast.parse(inspect.getsource(obj))
 
     def __actp_code_generator__(self, *args, comment_override=None, **kwargs):
         body = []
@@ -223,8 +243,16 @@ class SetupCodeGenerator(CodeGenerator):
     def __actp_code_generator__(self, *args, comment_override=None, **kwargs):
         body = []
         comment = comment_override if comment_override is not None else self.ctx.comment
-        body.append(ast.ImportFrom("ctypes", ast.alias("*")))
-        body.append(ast.ImportFrom("ctypes.util", ast.alias("find_library")))
+        body.append(astImportFrom("__future__", [ast.alias("annotations")]))
+        body.append(
+            ast.ImportFrom(
+                "typing", [ast.alias("TYPE_CHECKING"), ast.alias("Callable")]
+            )
+        )
+        body.append(ast.ImportFrom("ctypes", [ast.alias("*")]))
+        body.append(ast.ImportFrom("ctypes", [ast.alias("_Pointer")]))
+        body.append(ast.ImportFrom("ctypes.util", [ast.alias("find_library")]))
+        return body
 
 
 class CompositorCodeGenerator(CodeGenerator):

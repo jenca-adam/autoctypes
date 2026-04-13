@@ -1,8 +1,11 @@
 import autoctypes
 import sys
+import ctypes
 
 extractor = autoctypes.extractor.Extractor(
-    "/usr/include/linux/videodev2.h", autoctypes.context.Context([], []), True
+    "/usr/include/vulkan/vulkan.h",
+    autoctypes.context.Context([], [autoctypes.context.Library("libvulkan.so")]),
+    False,
 )
 first_type = next(extractor.cursor.get_children())
 taken = set()

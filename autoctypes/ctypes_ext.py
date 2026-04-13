@@ -34,6 +34,26 @@ class EARRAY:
     pass
 
 
+class EFORCE:
+    pass
+
+
+def make_forced_type(name, type_hint):
+    class _FORCE(EFORCE):
+        __qualname__ = name
+        __name__ = name
+
+        @classmethod
+        def __actp_reconstruct__(self):
+            return ast.Name(name)
+
+        @classmethod
+        def __actp_type_hint__(self):
+            return reconstruct_type_hint(type_hint)
+
+    return _FORCE
+
+
 def make_struct(name, fields, align, locs, localdefs, is_union, context, anon):
     """
     Creates a user-defined struct object.
@@ -187,7 +207,7 @@ def mk_array(ctype, array_size):
     return _ARRAY
 
 
-### COMPLEX
+### COMPLEX (deprecated in favor of c_float_complex)
 
 
 class c_complex(Structure):
@@ -326,7 +346,7 @@ class c_uint128(Structure):
 
     def __init__(self, num):
         if num > self._MAX:
-            raise OverflowError("int too larg to convert to c_int128")
+            raise OverflowError("int too large to convert to c_int128")
         self.lo = num & 0xFFFFFFFFFFFFFFFF
         self.hi = num >> 64
 
@@ -337,3 +357,11 @@ class c_uint128(Structure):
         """
 
         return self.lo | (self.hi << 64)
+
+
+c_int16_FORCE = make_forced_type("c_int16", int)
+c_uint16_FORCE = make_forced_type("c_uint16", int)
+c_int32_FORCE = make_forced_type("c_int32", int)
+c_uint32_FORCE = make_forced_type("c_uint32", int)
+c_int64_FORCE = make_forced_type("c_int64", int)
+c_uint64_FORCE = make_forced_type("c_uint64", int)
