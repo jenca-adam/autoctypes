@@ -20,7 +20,7 @@ def main(source, output, lib, name, type_hints, comments, includes, fluff, wrapp
         type_hints,
         fluff,
         name,
-        wrappers
+        wrappers,
     )
     head = code_generator.CompositorCodeGenerator(
         (

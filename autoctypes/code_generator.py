@@ -33,7 +33,6 @@ class CodeGenerator:
         warnings.warn(
             UserWarning(f"can't generate {ctype.__qualname__}, not including")
         )
-        breakpoint()
         return DummyCodeGenerator(ctype, *args, **kwargs)
 
 

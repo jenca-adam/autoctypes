@@ -30,7 +30,12 @@ class Extractor:
     """Extracts data from C header files"""
 
     def __init__(self, path, context, skip_includes=False):
-        self.tu = cindex.TranslationUnit.from_source(path)
+        self.tu = cindex.TranslationUnit.from_source(
+            path,
+            args=[
+                "-I/usr/lib/clang/21/include",
+            ],
+        )
         self.cursor = self.tu.cursor
         self.context = context
         self.typedefs = {}
@@ -82,7 +87,6 @@ class Extractor:
         if not curs and not tp:
             raise ValueError("specify either tp or curs")
         tp = tp or curs.type
-
         loc = loc or (curs.location if curs else None)
 
         type_handlers = {
@@ -277,7 +281,6 @@ class Extractor:
                     )
                     argnames.append(child.spelling or f"arg{index}")
                     index += 1
-
         return ctypes_ext.make_func(
             curs.spelling if curs else "ANONYMOUS",
             restype,

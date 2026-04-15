@@ -168,6 +168,8 @@ def mk_ptr(ctype):
 
         @classmethod
         def __actp_reconstruct__(cls):
+            if cls.__pointee in (None, type(None)):
+                return ast.Name("c_void_p")
             return ast.Call(ast.Name("POINTER"), [reconstruct_type(cls.__pointee)])
 
         @classmethod

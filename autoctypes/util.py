@@ -1,10 +1,11 @@
 import re
 import keyword
 
+
 def make_identifier(s):
     ident = re.sub(r"\W", "_", s)
     if keyword.iskeyword(ident):
-        ident=ident+"_" # potential name clash?
+        ident = ident + "_"  # potential name clash?
     return ident
 
 
