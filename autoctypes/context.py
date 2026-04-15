@@ -14,11 +14,23 @@ class Library:
 
 
 class Context:
-    def __init__(self, files, libs, comment=True, type_hints=True):
+    def __init__(
+        self,
+        files,
+        libs,
+        comment=True,
+        type_hints=True,
+        fluff=True,
+        names=set(),
+        wrapper_funcs=True,
+    ):
         self.comment = comment
         self.type_hints = type_hints
         self.files = files
         self.libs = libs
+        self.fluff = fluff
+        self.wrapper_funcs = wrapper_funcs
+        self.names = set(names)
         self._taken_names = set()
 
     def find_lib(self, func):

@@ -1,2 +1,6 @@
 test/autoctypes
 *__pycache__*
+.ruff_cache
+.mypy_cache
+autoctypes/.ruff_cache
+autoctypes/.mypy_cache

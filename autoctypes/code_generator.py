@@ -96,11 +96,7 @@ class StructCodeGenerator(CodeGenerator):
         return hints
 
     def __actp_code_generator__(self, *args, comment_override=None, **kwargs):
-        taken = (
-            self.ctx._taken_names
-            if self.ctx._taken_names is not None
-            else set()
-        )
+        taken = self.ctx._taken_names if self.ctx._taken_names is not None else set()
         body = [
             reconstruct_code_generator(locdef, self.ctx)
             for locdef in self.struct._localdefs
@@ -164,7 +160,6 @@ class FuncCodeGenerator(CodeGenerator):
         self.ctx = ctx
 
     def __actp_code_generator__(self, *args, comment_override=None, **kwargs):
-
         body = []
         lib = self.ctx.find_lib(self.func.__qualname__)
         if not lib:
@@ -182,9 +177,13 @@ class FuncCodeGenerator(CodeGenerator):
             ]
         self.ctx._taken_names.add(self.func.__qualname__)
         for req_type in (*self.func._argtypes, self.func._restype):
-            to_define = get_root_type(req_type) 
+            to_define = get_root_type(req_type)
             if to_define and to_define.__qualname__ not in self.ctx._taken_names:
-                body.extend(CodeGenerator.from_ctype(to_define, self.ctx).__actp_code_generator__(*args, comment_override, **kwargs))
+                body.extend(
+                    CodeGenerator.from_ctype(
+                        to_define, self.ctx
+                    ).__actp_code_generator__(*args, comment_override, **kwargs)
+                )
 
         libid = lib.id
         comment = comment_override if comment_override is not None else self.ctx.comment
@@ -222,6 +221,48 @@ class FuncCodeGenerator(CodeGenerator):
             )
         )
 
+        if self.ctx.wrapper_funcs:
+            func_call_args = [
+                *(ast.Name(argname) for argname in self.func._argnames),
+                ast.Starred(ast.Name("args")),
+            ]
+
+            func_body = [ast.Return(ast.Call(libfn, args=func_call_args))]
+            if self.ctx.type_hints:
+                func_def_args = ast.arguments(
+                    posonlyargs=[],
+                    args=[
+                        ast.arg(
+                            arg=argname,
+                            annotation=reconstruct_type_hint(argtype),
+                            type_comment=None,
+                        )
+                        for (argname, argtype) in zip(
+                            self.func._argnames, self.func._argtypes
+                        )
+                    ],
+                    vararg=ast.arg("args"),
+                )
+                func_def_returns = reconstruct_type_hint(self.func._restype)
+            else:
+                func_def_args = ast.arguments(
+                    posonlyargs=[],
+                    args=[
+                        ast.arg(arg=argname, annotation=None, type_comment=None)
+                        for argname in self.func._argnames
+                    ],
+                    vararg=ast.arg("args"),
+                )
+                func_def_returns = None
+            body.append(
+                ast.FunctionDef(
+                    name=self.func.__qualname__,
+                    args=func_def_args,
+                    body=func_body,
+                    lineno=0,
+                )
+            )
+
         return body
 
 
@@ -236,7 +277,11 @@ class TypedefCodeGenerator(CodeGenerator):
         body = []
         to_define = get_root_type(self.ctype)
         if to_define and to_define.__qualname__ not in self.ctx._taken_names:
-            body.extend(CodeGenerator.from_ctype(to_define, self.ctx).__actp_code_generator__(*args, comment_override, **kwargs))
+            body.extend(
+                CodeGenerator.from_ctype(to_define, self.ctx).__actp_code_generator__(
+                    *args, comment_override, **kwargs
+                )
+            )
         comment = comment_override if comment_override is not None else self.ctx.comment
         if comment:
             body.append(ast.Name(f"\n# {self.loc}"))
@@ -247,18 +292,21 @@ class TypedefCodeGenerator(CodeGenerator):
 
 
 class CoPyCodeGenerator(CodeGenerator):
-    def __init__(self, obj, ctx):
+    def __init__(self, obj, ctx, required=False):
         self.obj = obj
         self.ctx = ctx
+        self.required = required
         self.ast = ast.parse(inspect.getsource(obj))
 
     def __actp_code_generator__(self, *args, comment_override=None, **kwargs):
         body = []
+        if not self.required and not self.ctx.fluff:
+            return body
         comment = comment_override if comment_override is not None else self.ctx.comment
         if comment:
             body.append(ast.Name("\n# helper code included by autoctypes"))
         body.append(self.ast)
-        body.append(ast.Name('\n'))
+        body.append(ast.Name("\n"))
         return body
 
 
@@ -279,8 +327,9 @@ class ImportCodeGenerator(CodeGenerator):
             body.append(ast.ImportFrom("ctypes", [ast.alias("_Pointer")]))
         body.append(ast.ImportFrom("ctypes", [ast.alias("*")]))
         body.append(ast.ImportFrom("ctypes.util", [ast.alias("find_library")]))
-        body.append(ast.Import([ast.alias("struct")]))
         body.append(ast.Import([ast.alias("sys")]))
+        if self.ctx.fluff:
+            body.append(ast.Import([ast.alias("struct")]))
         return body
 
 
@@ -292,7 +341,7 @@ class CtxSetupCodeGenerator(CodeGenerator):
         body = []
         body.extend(
             reconstruct_code_generator(
-                CoPyCodeGenerator(libload._actp_libload, self.ctx)
+                CoPyCodeGenerator(libload._actp_libload, self.ctx, True)
             )
         )
         for lib in self.ctx.libs:
@@ -300,7 +349,7 @@ class CtxSetupCodeGenerator(CodeGenerator):
                 ast.Assign(
                     [ast.Name(lib.id)],
                     ast.Call(ast.Name("_actp_libload"), [ast.Constant(lib.name)]),
-                    lineno=0
+                    lineno=0,
                 )
             )
         return body

@@ -6,11 +6,22 @@ import click
 @click.option("--source", "-s", required=True)
 @click.option("--output", "-o", required=True)
 @click.option("--lib", "-l", multiple=True)
+@click.option("--name", "-n", multiple=True)
 @click.option("--type-hints/--no-type-hints", "-t/-T", is_flag=True, default=True)
 @click.option("--comments/--no-comments", "-c/-C", is_flag=True, default=True)
 @click.option("--includes/--no-includes", "-i/-I", is_flag=True, default=False)
-def main(source, output, lib, type_hints, comments, includes):
-    ctx = context.Context([], [context.Library(l) for l in lib], comments, type_hints)
+@click.option("--fluff/--no-fluff", "-f/-F", is_flag=True, default=True)
+@click.option("--wrappers/--no-wrappers", "-w/-W", is_flag=True, default=True)
+def main(source, output, lib, name, type_hints, comments, includes, fluff, wrappers):
+    ctx = context.Context(
+        [],
+        [context.Library(*l.split(":", 1)) for l in lib],
+        comments,
+        type_hints,
+        fluff,
+        name,
+        wrappers
+    )
     head = code_generator.CompositorCodeGenerator(
         (
             code_generator.ImportCodeGenerator(ctx),

@@ -48,7 +48,9 @@ def make_forced_type(name, type_hint):
             return ast.Name(name)
 
         @classmethod
-        def __actp_type_hint__(self):
+        def __actp_type_hint__(self, as_ctypes_type=False):
+            if as_ctypes_type:
+                return self.__actp_reconstruct__()
             return reconstruct_type_hint(type_hint)
 
     return _FORCE
@@ -79,14 +81,14 @@ def make_struct(name, fields, align, locs, localdefs, is_union, context, anon):
             return ast.Name(name)
 
         @classmethod
-        def __actp_type_hint__(self):
+        def __actp_type_hint__(self, *args):
             return ast.Name(name)
 
     return _STRUCT
 
 
 ### FUNC(factory)
-def make_func(name, restype, argtypes, locs, context):
+def make_func(name, restype, argtypes, argnames, locs, context):
     """
     Creates an user-defined function object
     """
@@ -95,6 +97,7 @@ def make_func(name, restype, argtypes, locs, context):
         __name__ = name
         __qualname__ = name
         _argtypes = argtypes
+        _argnames = argnames
         _restype = restype
         _ctx = context
         _loc = locs
@@ -110,7 +113,7 @@ def make_func(name, restype, argtypes, locs, context):
             )
 
         @classmethod
-        def __actp_type_hint__(cls):
+        def __actp_type_hint__(cls, *args):
             return ast.Subscript(
                 ast.Name("Callable"),
                 ast.Tuple(
@@ -145,7 +148,7 @@ def mk_elaborated(raw_name, ctype):
             return ast.Name(cls.__qualname__)
 
         @classmethod
-        def __actp_type_hint__(cls):
+        def __actp_type_hint__(cls, *args):
             return ast.Name(cls.__qualname__)
 
     return _ELABORATED
@@ -168,7 +171,7 @@ def mk_ptr(ctype):
             return ast.Call(ast.Name("POINTER"), [reconstruct_type(cls.__pointee)])
 
         @classmethod
-        def __actp_type_hint__(cls):
+        def __actp_type_hint__(cls, *args):
             # is there a better way?
             if cls.__pointee in (None, type(None)):
                 return ast.Name("c_void_p")
@@ -199,7 +202,7 @@ def mk_array(ctype, array_size):
             )
 
         @classmethod
-        def __actp_type_hint__(cls):
+        def __actp_type_hint__(cls, *args):
             return ast.Subscript(
                 ast.Name("Array"), reconstruct_type_hint(cls.__item_type, True)
             )
@@ -240,7 +243,6 @@ class c_float128(Structure):
     _fields_ = [("lo", c_uint64), ("hi", c_uint64)]
 
     def __init__(self, num):
-
         packed = struct.pack("d", num)
         unpacked = struct.unpack("Q", packed)[0]
         sign = (unpacked >> 63) & 0x1

@@ -69,7 +69,7 @@ def reconstruct_type_hint(ctype, as_ctypes_type=False):
     if ctype is None:
         return ast.Name("None")
     if hasattr(ctype, "__actp_type_hint__"):
-        return ctype.__actp_type_hint__()
+        return ctype.__actp_type_hint__(as_ctypes_type)
     if ctype in CTYPE_RESOLVE and not as_ctypes_type:
         return ast.Name(CTYPE_RESOLVE[ctype].__name__)
     return ast.Name(ctype.__name__)

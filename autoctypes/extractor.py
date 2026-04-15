@@ -57,6 +57,8 @@ class Extractor:
             handler = cursor_handlers.get(child.kind)
 
             if handler:
+                if self.context.names and child.spelling not in self.context.names:
+                    continue
                 yield handler(child)
 
     def _handle_cursor_mk_code_generator(self, curs):
@@ -174,7 +176,7 @@ class Extractor:
     def _handle_type_array(self, tp, loc, *_):
         size = tp.get_array_size()
         el_tp = self.get_ctypes_type(tp.get_array_element_type(), loc=loc)
-        return ctypes_ext.mk_array(el_tp, max(size,0))
+        return ctypes_ext.mk_array(el_tp, max(size, 0))
 
     def _handle_type_pointer(self, tp, loc, curs):
         pointee = tp.get_pointee()
@@ -257,16 +259,30 @@ class Extractor:
 
     def _handle_type_functionproto(self, tp, loc, curs):
         restype = self.get_ctypes_type(tp.get_result(), loc=loc)
-        if tp.kind == cindex.TypeKind.FUNCTIONNOPROTO:
-            argtypes = []
-        else:
-            argtypes = [
-                self.get_ctypes_type(arg, loc=loc) for arg in tp.argument_types()
-            ]
+        argtypes = []
+        argnames = []
+        if tp.kind != cindex.TypeKind.FUNCTIONNOPROTO:
+            if not curs:
+                argtypes = [
+                    self.get_ctypes_type(arg, loc=loc) for arg in tp.argument_types()
+                ]
+                argnames = [f"arg{i+1}" for i in range(len(argtypes))]
+            else:
+                index = 1
+                for child in curs.get_children():
+                    if child.kind != cindex.CursorKind.PARM_DECL:
+                        continue
+                    argtypes.append(
+                        self.get_ctypes_type(child.type, child.location, child)
+                    )
+                    argnames.append(child.spelling or f"arg{index}")
+                    index += 1
+
         return ctypes_ext.make_func(
             curs.spelling if curs else "ANONYMOUS",
             restype,
             argtypes,
+            argnames,
             location_to_str(loc),
             self.context,
         )
