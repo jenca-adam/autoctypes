@@ -222,9 +222,12 @@ class FuncCodeGenerator(CodeGenerator):
         )
 
         if self.ctx.wrapper_funcs:
+            vararg_name = "args"
+            while vararg_name in self.func._argnames:
+                vararg_name += "_"
             func_call_args = [
                 *(ast.Name(argname) for argname in self.func._argnames),
-                ast.Starred(ast.Name("args")),
+                ast.Starred(ast.Name(vararg_name)),
             ]
 
             func_body = [ast.Return(ast.Call(libfn, args=func_call_args))]
@@ -241,7 +244,7 @@ class FuncCodeGenerator(CodeGenerator):
                             self.func._argnames, self.func._argtypes
                         )
                     ],
-                    vararg=ast.arg("args"),
+                    vararg=ast.arg(vararg_name),
                 )
                 func_def_returns = reconstruct_type_hint(self.func._restype)
             else:
@@ -251,7 +254,7 @@ class FuncCodeGenerator(CodeGenerator):
                         ast.arg(arg=argname, annotation=None, type_comment=None)
                         for argname in self.func._argnames
                     ],
-                    vararg=ast.arg("args"),
+                    vararg=ast.arg(vararg_name),
                 )
                 func_def_returns = None
             body.append(
@@ -352,4 +355,5 @@ class CtxSetupCodeGenerator(CodeGenerator):
                     lineno=0,
                 )
             )
+        body.append(ast.Name("\n"))
         return body
