@@ -3,7 +3,7 @@ import click
 
 
 @click.command()
-@click.option("--source", "-s", required=True)
+@click.option("--source", "-s", required=True, multiple=True)
 @click.option("--output", "-o", required=True)
 @click.option("--lib", "-l", multiple=True)
 @click.option("--name", "-n", multiple=True)
@@ -33,11 +33,14 @@ def main(source, output, lib, name, type_hints, comments, includes, fluff, wrapp
         ),
         ctx,
     )
-    e = extractor.Extractor(source, ctx, not includes)
-    body = code_generator.CompositorCodeGenerator(e.extract_code_generators(), ctx)
+    body = []
+    for src in source:
+        e = extractor.Extractor(src, ctx, not includes)
+        body.extend(e.extract_code_generators())
+   
     with open(output, "w") as f:
         f.write(reconstruct.stringify_code_generator(head))
-        f.write(reconstruct.stringify_code_generator(body))
+        f.write(reconstruct.stringify_code_generator(code_generator.CompositorCodeGenerator(body, ctx)))
 
 
 if __name__ == "__main__":
