@@ -9,6 +9,7 @@ from .reconstruct import (
     reconstruct_type_hint,
 )
 from . import libload
+from .inline_func import Translator
 from .ctypes_ext import *
 
 
@@ -158,10 +159,60 @@ class FuncCodeGenerator(CodeGenerator):
         self.func = func
         self.ctx = ctx
 
+    def _get_vararg_name(self):
+        vararg_name = "args"
+        while vararg_name in self.func._argnames:
+            vararg_name += "_"
+        return vararg_name
+
+    def _get_signature(self, vararg_name):
+        if self.ctx.type_hints:
+            func_def_args = ast.arguments(
+                posonlyargs=[],
+                args=[
+                    ast.arg(
+                        arg=argname,
+                        annotation=reconstruct_type_hint(argtype),
+                        type_comment=None,
+                    )
+                    for (argname, argtype) in zip(
+                        self.func._argnames, self.func._argtypes
+                    )
+                ],
+                vararg=ast.arg(vararg_name),
+            )
+            func_def_returns = reconstruct_type_hint(self.func._restype)
+        else:
+            func_def_args = ast.arguments(
+                posonlyargs=[],
+                args=[
+                    ast.arg(arg=argname, annotation=None, type_comment=None)
+                    for argname in self.func._argnames
+                ],
+                vararg=ast.arg(vararg_name),
+            )
+            func_def_returns = None
+        return func_def_args, func_def_returns
+
     def __actp_code_generator__(self, *args, comment_override=None, **kwargs):
         body = []
         lib = self.ctx.find_lib(self.func.__qualname__)
+        vararg_name = self._get_vararg_name()
         if not lib:
+            if self.func._IS_INLINE:
+                translator = Translator(self.func)
+                func_body = translator.get_py_ast()
+                func_def_args, func_def_returns = self._get_signature(vararg_name)
+                return [
+                    ast.FunctionDef(
+                        name=self.func.__qualname__,
+                        args=func_def_args,
+                        body=func_body,
+                        returns=func_def_returns,
+                        lineno=0,
+                    )
+                ]
+
             warnings.warn(
                 UserWarning(
                     f"function {self.func.__qualname__} "
@@ -219,48 +270,19 @@ class FuncCodeGenerator(CodeGenerator):
                 lineno=0,
             )
         )
-
         if self.ctx.wrapper_funcs:
-            vararg_name = "args"
-            while vararg_name in self.func._argnames:
-                vararg_name += "_"
             func_call_args = [
                 *(ast.Name(argname) for argname in self.func._argnames),
                 ast.Starred(ast.Name(vararg_name)),
             ]
-
+            func_def_args, func_def_returns = self._get_signature(vararg_name)
             func_body = [ast.Return(ast.Call(libfn, args=func_call_args))]
-            if self.ctx.type_hints:
-                func_def_args = ast.arguments(
-                    posonlyargs=[],
-                    args=[
-                        ast.arg(
-                            arg=argname,
-                            annotation=reconstruct_type_hint(argtype),
-                            type_comment=None,
-                        )
-                        for (argname, argtype) in zip(
-                            self.func._argnames, self.func._argtypes
-                        )
-                    ],
-                    vararg=ast.arg(vararg_name),
-                )
-                func_def_returns = reconstruct_type_hint(self.func._restype)
-            else:
-                func_def_args = ast.arguments(
-                    posonlyargs=[],
-                    args=[
-                        ast.arg(arg=argname, annotation=None, type_comment=None)
-                        for argname in self.func._argnames
-                    ],
-                    vararg=ast.arg(vararg_name),
-                )
-                func_def_returns = None
             body.append(
                 ast.FunctionDef(
                     name=self.func.__qualname__,
                     args=func_def_args,
                     body=func_body,
+                    returns=func_def_returns,
                     lineno=0,
                 )
             )

@@ -281,6 +281,24 @@ class Extractor:
                     )
                     argnames.append(child.spelling or f"arg{index}")
                     index += 1
+        inline = False
+        if curs:
+            for tok in curs.get_tokens():
+                if tok.spelling == "inline" and tok.kind == cindex.TokenKind.KEYWORD:
+                    inline = True
+                    break
+                if tok.spelling == curs.spelling:
+                    break
+        if inline:
+            return ctypes_ext.make_inline_func(
+                curs.spelling,
+                restype,
+                argtypes,
+                argnames,
+                list(curs.get_children()),
+                location_to_str(loc),
+                self.context,
+            )
         return ctypes_ext.make_func(
             curs.spelling if curs else "ANONYMOUS",
             restype,

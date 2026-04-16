@@ -21,6 +21,7 @@ CTYPE_RESOLVE = {
     ctypes.c_uint: int,
     ctypes.c_ulong: int,
     ctypes.c_ulonglong: int,
+    ctypes.c_float: float,
     ctypes.c_double: float,
     ctypes.c_longdouble: float,
     ctypes.c_double_complex: complex,

@@ -37,10 +37,14 @@ def main(source, output, lib, name, type_hints, comments, includes, fluff, wrapp
     for src in source:
         e = extractor.Extractor(src, ctx, not includes)
         body.extend(e.extract_code_generators())
-   
+
     with open(output, "w") as f:
         f.write(reconstruct.stringify_code_generator(head))
-        f.write(reconstruct.stringify_code_generator(code_generator.CompositorCodeGenerator(body, ctx)))
+        f.write(
+            reconstruct.stringify_code_generator(
+                code_generator.CompositorCodeGenerator(body, ctx)
+            )
+        )
 
 
 if __name__ == "__main__":

@@ -38,6 +38,45 @@ class EFORCE:
     pass
 
 
+class EINLINE:
+    pass
+
+
+### INLINE (factory)
+def make_inline_func(name, restype, argtypes, argnames, body, locs, context):
+    class _INLINE(EINLINE):
+        __qualname__ = name
+        __name__ = name
+        _ctx = context
+        _restype = restype
+        _argtypes = argtypes
+        _argnames = argnames
+        _body = body
+        _loc = locs
+        _IS_INLINE = True
+
+        @classmethod
+        def __actp_reconstruct__(self):
+            return ast.Name(name)
+
+        @classmethod
+        def __actp_type_hint__(self, as_ctypes_type=False):
+            return ast.Subscript(
+                ast.Name("Callable"),
+                ast.Tuple(
+                    (
+                        ast.List(
+                            [reconstruct_type_hint(argt) for argt in cls._argtypes]
+                        ),
+                        reconstruct_type_hint(cls._restype),
+                    )
+                ),
+            )
+
+    return _INLINE
+
+
+### FORCE (factory)
 def make_forced_type(name, type_hint):
     class _FORCE(EFORCE):
         __qualname__ = name
@@ -56,6 +95,7 @@ def make_forced_type(name, type_hint):
     return _FORCE
 
 
+### STRUCT(factory)
 def make_struct(name, fields, align, locs, localdefs, is_union, context, anon):
     """
     Creates a user-defined struct object.
@@ -101,6 +141,7 @@ def make_func(name, restype, argtypes, argnames, locs, context):
         _restype = restype
         _ctx = context
         _loc = locs
+        _IS_INLINE = False
 
         @classmethod
         def __actp_reconstruct__(cls):
