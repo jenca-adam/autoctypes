@@ -23,7 +23,7 @@ class Context:
         fluff=True,
         names=set(),
         wrapper_funcs=True,
-        cflags=[]
+        cflags=[],
     ):
         self.comment = comment
         self.type_hints = type_hints
@@ -35,6 +35,7 @@ class Context:
         self.cflags = cflags
         self._taken_names = set()
         self._renamed = {}
+
     def find_lib(self, func):
         for lib in self.libs:
             try:

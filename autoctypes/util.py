@@ -1,27 +1,16 @@
 import re
 import keyword
-from clang import cindex
 import ctypes
+from .clang_ext import is_function_inlined as is_function_inlined
 
-if not hasattr(cindex.Cursor, "is_function_inlined"):
-    cindex.conf.lib.clang_Cursor_isFunctionInlined.argtypes = [cindex.Cursor]
-    cindex.conf.lib.clang_Cursor_isFunctionInlined.restype = ctypes.c_uint
-    is_function_inlined = cindex.conf.lib.clang_Cursor_isFunctionInlined
-else:
-    is_function_inlined = cindex.Cursor.is_function_inlined
-
-cindex.conf.lib.clang_getClangVersion.restype = ctypes.c_char_p
-try:
-    _clang_ver = cindex.conf.lib.clang_getClangVersion()
-    _clang_ver_id = int(_clang_ver.split()[-1].split(b'.')[0])
-    CLANG_INCLUDE_PATH = f"/usr/lib/clang/{_clang_ver_id}/include"
-except:
-    raise
-    CLANG_INCLUDE_PATH = "/usr/include/clang"
 
 def make_identifier(s):
+    from . import ctypes_ext  # postpone import
+
     ident = re.sub(r"\W", "_", s)
-    if keyword.iskeyword(ident):
+    while keyword.iskeyword(ident) or hasattr(
+        ctypes_ext, ident
+    ):  # don't allow overwriting of c types!
         ident = ident + "_"  # potential name clash?
     return ident
 

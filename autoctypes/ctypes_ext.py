@@ -43,7 +43,18 @@ class EINLINE:
 
 
 ### INLINE (factory)
-def make_inline_func(name, restype, argtypes, argnames, orig_argnames, extractor, body, locs, context):
+def make_inline_func(
+    name,
+    restype,
+    argtypes,
+    argnames,
+    orig_argnames,
+    extractor,
+    localdefs,
+    body,
+    locs,
+    context,
+):
     class _INLINE(EINLINE):
         __qualname__ = name
         __name__ = name
@@ -55,6 +66,7 @@ def make_inline_func(name, restype, argtypes, argnames, orig_argnames, extractor
         _body = body
         _loc = locs
         _extractor = extractor
+        _localdefs = localdefs
         _IS_INLINE = True
 
         @classmethod
@@ -130,7 +142,7 @@ def make_struct(name, fields, align, locs, localdefs, is_union, context, anon):
 
 
 ### FUNC(factory)
-def make_func(name, restype, argtypes, argnames, locs, context):
+def make_func(name, restype, argtypes, argnames, localdefs, locs, context):
     """
     Creates an user-defined function object
     """
@@ -142,6 +154,7 @@ def make_func(name, restype, argtypes, argnames, locs, context):
         _argnames = argnames
         _restype = restype
         _ctx = context
+        _localdefs = localdefs
         _loc = locs
         _IS_INLINE = False
 
@@ -207,6 +220,7 @@ def mk_ptr(ctype):
 
     class _POINTER(EPOINTER):
         __pointee = ctype
+        _type_ = ctype
         _NEEDSDEF = ctype if getattr(ctype, "_NEEDSDEF", False) else False
 
         @classmethod

@@ -7,7 +7,8 @@ from clang import cindex
 import os
 from . import ctypes_ext
 from .context import Context
-from .util import make_identifier, get_root_type, is_function_inlined, CLANG_INCLUDE_PATH
+from .util import make_identifier, get_root_type
+from .clang_ext import is_function_inlined, CLANG_INCLUDE_PATH
 from .code_generator import (
     CodeGenerator,
     StructCodeGenerator,
@@ -40,6 +41,7 @@ class Extractor:
         self.typedefs = {}
         self.structs = {}
         self.elaborated_cache = {}
+        self.ctype_cache = {}
         self.processing = []
         self.skip_includes = skip_includes
 
@@ -86,6 +88,11 @@ class Extractor:
         if not curs and not tp:
             raise ValueError("specify either tp or curs")
         tp = tp or curs.type
+        if curs and curs in self.ctype_cache:
+            return self.ctype_cache[curs]  # cursors are hashable, but types aren't.
+            # could've hashed the c struct content?
+            # probably doesn't matter
+
         loc = loc or (curs.location if curs else None)
 
         type_handlers = {
@@ -128,7 +135,10 @@ class Extractor:
         }
 
         handler = type_handlers.get(tp.kind, self._handle_type_unknown)
-        return handler(tp, loc, curs)
+        ctp = handler(tp, loc, curs)
+        if curs:
+            self.ctype_cache[curs] = ctp
+        return ctp
 
     def _handle_type_sized_int(self, tp, *_):
         mapping = {
@@ -197,7 +207,7 @@ class Extractor:
 
     def _handle_type_record(self, tp, loc, curs):
         name = make_identifier(tp.spelling.split()[-1].strip())
-        self.context._renamed[tp.spelling]=name
+        self.context._renamed[tp.spelling] = name
         align = tp.get_align() if curs else 0
         is_union = tp.get_declaration().kind == cindex.CursorKind.UNION_DECL
         loc = loc or tp.get_declaration().location
@@ -287,8 +297,14 @@ class Extractor:
         func_name = make_identifier(curs.spelling) if curs else "ANONYMOUS"
 
         if curs:
-            self.context._renamed[curs.spelling]=func_name
+            self.context._renamed[curs.spelling] = func_name
             inline = bool(is_function_inlined(curs))
+        localdefs = []
+        for tp in (*argtypes, restype):
+            needsdef = get_root_type(tp)
+            if needsdef:
+                localdefs.append(CodeGenerator.from_ctype(tp, self.context))
+
         if inline:
             return ctypes_ext.make_inline_func(
                 func_name,
@@ -297,16 +313,17 @@ class Extractor:
                 argnames,
                 orig_argnames,
                 self,
+                localdefs,
                 list(curs.get_children()),
                 location_to_str(loc),
                 self.context,
-
             )
         return ctypes_ext.make_func(
             func_name,
             restype,
             argtypes,
             argnames,
+            localdefs,
             location_to_str(loc),
             self.context,
         )
