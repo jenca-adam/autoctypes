@@ -1,7 +1,7 @@
 import ast
 import warnings
 import inspect
-from .util import get_root_type
+from .util import get_root_type, make_identifier
 from .reconstruct import (
     reconstruct_code_generator,
     stringify_code_generator,
@@ -96,6 +96,7 @@ class StructCodeGenerator(CodeGenerator):
         return hints
 
     def __actp_code_generator__(self, *args, comment_override=None, **kwargs):
+        breakpoint()
         taken = self.ctx._taken_names if self.ctx._taken_names is not None else set()
         body = [
             reconstruct_code_generator(locdef, self.ctx)
@@ -200,7 +201,7 @@ class FuncCodeGenerator(CodeGenerator):
         vararg_name = self._get_vararg_name()
         if not lib:
             if self.func._IS_INLINE:
-                translator = Translator(self.func)
+                translator = Translator(self.func, self.ctx)
                 func_body = translator.get_py_ast()
                 func_def_args, func_def_returns = self._get_signature(vararg_name)
                 return [

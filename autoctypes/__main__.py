@@ -12,7 +12,8 @@ import click
 @click.option("--includes/--no-includes", "-i/-I", is_flag=True, default=False)
 @click.option("--fluff/--no-fluff", "-f/-F", is_flag=True, default=True)
 @click.option("--wrappers/--no-wrappers", "-w/-W", is_flag=True, default=True)
-def main(source, output, lib, name, type_hints, comments, includes, fluff, wrappers):
+@click.option("--cflags")
+def main(source, output, lib, name, type_hints, comments, includes, fluff, wrappers, cflags):
     ctx = context.Context(
         [],
         [context.Library(*l.split(":", 1)) for l in lib],
@@ -21,6 +22,7 @@ def main(source, output, lib, name, type_hints, comments, includes, fluff, wrapp
         fluff,
         name,
         wrappers,
+        cflags.split() if cflags else []
     )
     head = code_generator.CompositorCodeGenerator(
         (

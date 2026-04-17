@@ -7,7 +7,7 @@ from clang import cindex
 import os
 from . import ctypes_ext
 from .context import Context
-from .util import make_identifier, get_root_type
+from .util import make_identifier, get_root_type, is_function_inlined, CLANG_INCLUDE_PATH
 from .code_generator import (
     CodeGenerator,
     StructCodeGenerator,
@@ -32,9 +32,8 @@ class Extractor:
     def __init__(self, path, context, skip_includes=False):
         self.tu = cindex.TranslationUnit.from_source(
             path,
-            args=[
-                "-I/usr/lib/clang/21/include",
-            ],
+            args=[f"-I{CLANG_INCLUDE_PATH}", *context.cflags],
+            options=cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD,
         )
         self.cursor = self.tu.cursor
         self.context = context
@@ -198,6 +197,7 @@ class Extractor:
 
     def _handle_type_record(self, tp, loc, curs):
         name = make_identifier(tp.spelling.split()[-1].strip())
+        self.context._renamed[tp.spelling]=name
         align = tp.get_align() if curs else 0
         is_union = tp.get_declaration().kind == cindex.CursorKind.UNION_DECL
         loc = loc or tp.get_declaration().location
@@ -265,6 +265,7 @@ class Extractor:
         restype = self.get_ctypes_type(tp.get_result(), loc=loc)
         argtypes = []
         argnames = []
+        orig_argnames = []
         if tp.kind != cindex.TypeKind.FUNCTIONNOPROTO:
             if not curs:
                 argtypes = [
@@ -279,28 +280,30 @@ class Extractor:
                     argtypes.append(
                         self.get_ctypes_type(child.type, child.location, child)
                     )
-                    argnames.append(child.spelling or f"arg{index}")
+                    argnames.append(make_identifier(child.spelling) or f"arg{index}")
+                    orig_argnames.append(child.spelling)
                     index += 1
         inline = False
+        func_name = make_identifier(curs.spelling) if curs else "ANONYMOUS"
+
         if curs:
-            for tok in curs.get_tokens():
-                if tok.spelling == "inline" and tok.kind == cindex.TokenKind.KEYWORD:
-                    inline = True
-                    break
-                if tok.spelling == curs.spelling:
-                    break
+            self.context._renamed[curs.spelling]=func_name
+            inline = bool(is_function_inlined(curs))
         if inline:
             return ctypes_ext.make_inline_func(
-                curs.spelling,
+                func_name,
                 restype,
                 argtypes,
                 argnames,
+                orig_argnames,
+                self,
                 list(curs.get_children()),
                 location_to_str(loc),
                 self.context,
+
             )
         return ctypes_ext.make_func(
-            curs.spelling if curs else "ANONYMOUS",
+            func_name,
             restype,
             argtypes,
             argnames,

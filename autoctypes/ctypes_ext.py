@@ -43,7 +43,7 @@ class EINLINE:
 
 
 ### INLINE (factory)
-def make_inline_func(name, restype, argtypes, argnames, body, locs, context):
+def make_inline_func(name, restype, argtypes, argnames, orig_argnames, extractor, body, locs, context):
     class _INLINE(EINLINE):
         __qualname__ = name
         __name__ = name
@@ -51,8 +51,10 @@ def make_inline_func(name, restype, argtypes, argnames, body, locs, context):
         _restype = restype
         _argtypes = argtypes
         _argnames = argnames
+        _orig_argnames = orig_argnames
         _body = body
         _loc = locs
+        _extractor = extractor
         _IS_INLINE = True
 
         @classmethod
