@@ -294,6 +294,7 @@ class Extractor:
                     orig_argnames.append(child.spelling)
                     index += 1
         inline = False
+        variadic = tp.is_function_variadic()
         func_name = make_identifier(curs.spelling) if curs else "ANONYMOUS"
 
         if curs:
@@ -303,7 +304,7 @@ class Extractor:
         for tp in (*argtypes, restype):
             needsdef = get_root_type(tp)
             if needsdef:
-                localdefs.append(CodeGenerator.from_ctype(tp, self.context))
+                localdefs.append(CodeGenerator.from_ctype(needsdef, self.context))
 
         if inline:
             return ctypes_ext.make_inline_func(
@@ -314,6 +315,7 @@ class Extractor:
                 orig_argnames,
                 self,
                 localdefs,
+                variadic,
                 list(curs.get_children()),
                 location_to_str(loc),
                 self.context,
@@ -324,6 +326,7 @@ class Extractor:
             argtypes,
             argnames,
             localdefs,
+            variadic,
             location_to_str(loc),
             self.context,
         )

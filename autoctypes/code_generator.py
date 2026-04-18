@@ -31,6 +31,7 @@ class CodeGenerator:
             return FuncCodeGenerator(ctype, ctx, *args, **kwargs)
         if issubclass(ctype, EELABORATED):
             return cls.from_ctype(ctype._original, ctx)
+        breakpoint()
         warnings.warn(
             UserWarning(f"can't generate {ctype.__qualname__}, not including")
         )
@@ -166,6 +167,7 @@ class FuncCodeGenerator(CodeGenerator):
         return vararg_name
 
     def _get_signature(self, vararg_name):
+        vararg_ast = ast.arg(vararg_name) if self.func._variadic else None
         if self.ctx.type_hints:
             func_def_args = ast.arguments(
                 posonlyargs=[],
@@ -179,7 +181,7 @@ class FuncCodeGenerator(CodeGenerator):
                         self.func._argnames, self.func._argtypes
                     )
                 ],
-                vararg=ast.arg(vararg_name),
+                vararg=vararg_ast,
             )
             func_def_returns = reconstruct_type_hint(self.func._restype)
         else:
@@ -189,7 +191,7 @@ class FuncCodeGenerator(CodeGenerator):
                     ast.arg(arg=argname, annotation=None, type_comment=None)
                     for argname in self.func._argnames
                 ],
-                vararg=ast.arg(vararg_name),
+                vararg=vararg_ast,
             )
             func_def_returns = None
         return func_def_args, func_def_returns
@@ -286,8 +288,9 @@ class FuncCodeGenerator(CodeGenerator):
         if self.ctx.wrapper_funcs:
             func_call_args = [
                 *(ast.Name(argname) for argname in self.func._argnames),
-                ast.Starred(ast.Name(vararg_name)),
             ]
+            if self.func._variadic:
+                func_call_args.append(ast.Starred(ast.Name(vararg_name)))
             func_def_args, func_def_returns = self._get_signature(vararg_name)
             func_body = [ast.Return(ast.Call(libfn, args=func_call_args))]
             body.append(

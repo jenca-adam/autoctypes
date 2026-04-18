@@ -51,6 +51,7 @@ def make_inline_func(
     orig_argnames,
     extractor,
     localdefs,
+    variadic,
     body,
     locs,
     context,
@@ -67,6 +68,7 @@ def make_inline_func(
         _loc = locs
         _extractor = extractor
         _localdefs = localdefs
+        _variadic = variadic
         _IS_INLINE = True
 
         @classmethod
@@ -142,7 +144,7 @@ def make_struct(name, fields, align, locs, localdefs, is_union, context, anon):
 
 
 ### FUNC(factory)
-def make_func(name, restype, argtypes, argnames, localdefs, locs, context):
+def make_func(name, restype, argtypes, argnames, localdefs, variadic, locs, context):
     """
     Creates an user-defined function object
     """
@@ -154,6 +156,7 @@ def make_func(name, restype, argtypes, argnames, localdefs, locs, context):
         _argnames = argnames
         _restype = restype
         _ctx = context
+        _variadic = variadic
         _localdefs = localdefs
         _loc = locs
         _IS_INLINE = False
