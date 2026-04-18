@@ -1,10 +1,12 @@
 from clang import cindex
-from .clang_ext import EvalResult
 import ast
 import traceback
-from . import reconstruct, ctypes_ext
 import _ctypes
 import ctypes
+
+from . import reconstruct, ctypes_ext
+from .clang_ext import EvalResult
+from .util import get_root_type
 
 
 class Translator:
@@ -18,8 +20,14 @@ class Translator:
         self.extractor = inline_func._extractor
         self.ctx = context
         self.body = []
-        self.needs = []
-        self._args = {orig:(new,ctp) for orig, new,ctp in zip(inline_func._orig_argnames, inline_func._argnames, inline_func._argtypes)}
+        self.needsdef = set()
+        self._needtypes = set()
+        self._args = {
+            orig: (new, ctp)
+            for orig, new, ctp in zip(
+                inline_func._orig_argnames, inline_func._argnames, inline_func._argtypes
+            )
+        }
         self._decls = {}
 
     def print_ast(self, node, indent=0):
@@ -45,7 +53,7 @@ class Translator:
         if not handler:
             return
         yield from handler(node)
-    
+
     def _is_ptr(self, ctp):
         return (
             issubclass(ctp, _ctypes.CFuncPtr)
@@ -53,6 +61,16 @@ class Translator:
             or issubclass(ctp, ctypes_ext.EPOINTER)
             or ctp in (ctypes.c_char_p, ctypes.c_wchar_p)
         )
+
+    def _force_type(self, ctp, value, explicit=False):
+        if issubclass(ctp, ctypes_ext.ENOCAST) and not explicit:  #
+            return value
+        reconstructed = reconstruct.reconstruct_type(ctp)
+        ### We need the type to be defined to be able to cast to it
+        needs = get_root_type(ctp)
+        if needs:
+            self.needsdef.add(self.extractor._codegen.from_ctype(needs, self.ctx))
+        return ast.Call(reconstructed, [value])
 
     def _value_for_op(self, ctp, py_ast):
         if self._is_ptr(ctp):
@@ -69,10 +87,31 @@ class Translator:
             value=py_ast,
             attr="value",
         )
-    def _resolve_name(self, name):
+    def _value_for_arg(self, ctp, py_ast):
+        return self._value_for_return(ctp, py_ast) #for now
+    def _resolve_name(self, name, curs):
+        ### FILTHY
         if name in self._args:
-            return self._args[name]
-        raise ValueError(f"unknown name: {name}") # TODO functions, global variables, declarations, etc.
+            nm, ctp =self._args[name]
+            return ast.Name(nm), ctp
+        if name in self.ctx._renamed:
+            nm, ctp = self.ctx._renamed[name]
+            return ast.Name(nm), ctp
+        if curs.referenced:
+
+            ctp = self.extractor.get_ctypes_type(curs=curs.referenced)
+            if ctp not in self._needtypes:
+                self.needsdef.add(self.extractor._codegen.from_ctype(ctp, self.ctx))
+                self._needtypes.add(ctp)
+            if issubclass(ctp, ctypes_ext.EFUNC) and not self.ctx.wrapper_funcs:
+                lib = self.ctx.find_lib(ctp.__qualname__)
+                if lib:
+                    return (ast.Subscript(ast.Name(lib.id), ast.Constant(ctp.__qualname__)), ctp)
+            return (ast.Name(ctp.__qualname__), ctp)
+        raise ValueError(
+            f"unknown name: {name}"
+        )  # TODO functions, global variables, declarations, etc.
+
     def _value_for_return(self, ctp, py_ast):
         if (
             issubclass(ctp, ctypes._SimpleCData)
@@ -219,7 +258,6 @@ class Translator:
         left = self._value_for_op(left_ctp, left_ast)
         right = self._value_for_op(right_ctp, right_ast)
         result_ctp = self.extractor.get_ctypes_type(curs=node)
-        result_type_reconstructed = reconstruct.reconstruct_type(result_ctp)
         binop = node.binary_operator
         result = (
             self._binop_binop(left, right, binop, left_ctp, right_ctp)
@@ -229,7 +267,7 @@ class Translator:
         )
         if not result:
             raise NotImplementedError(binop)
-        yield ast.Call(result_type_reconstructed, args=[result])
+        yield self._force_type(result_ctp, result)
 
     def _translate_literal(self, node):
         value = EvalResult(node).value
@@ -239,7 +277,7 @@ class Translator:
 
     def _translate_string_literal(self, node):
         value = ast.literal_eval(node.spelling)  # careful with this
-        yield ast.Call(ast.Name("c_char_p"), args=[ast.Constant(value.encode("utf-8"))])
+        yield self._force_type(ctypes.c_char_p, ast.Constant(value.encode("utf-8")))
 
     def _translate_call_expr(self, node):
         kids = list(node.get_children())
@@ -247,13 +285,17 @@ class Translator:
             raise ValueError("empty CALL_EXPR")
         func = next(self.translate(kids[0]))
         restype = self.extractor.get_ctypes_type(curs=node)
-        reconstructed = reconstruct.reconstruct_type(restype)
-        args = [next(self.translate(arg)) for arg in node.get_arguments()]
-        yield ast.Call(reconstructed, [ast.Call(func, args)])
-    
+        args = [
+            self._value_for_arg(
+                self.extractor.get_ctypes_type(curs=arg), next(self.translate(arg))
+            )
+            for arg in node.get_arguments()
+        ]
+        yield self._force_type(restype, ast.Call(func, args))
+
     def _translate_decl_ref(self, node):
-        name, ctp = self._resolve_name(node.spelling)
-        yield ast.Call(reconstruct.reconstruct_type(ctp), [ast.Name(name)])
+        name, ctp = self._resolve_name(node.spelling, node)
+        yield self._force_type(ctp, name)
 
     def get_py_ast(self):
         for node in self.inline_func._body:
@@ -261,9 +303,11 @@ class Translator:
                 continue
             self.print_ast(node)
             try:
-                self.body.extend(self.translate(node))
+                self.body.extend(
+                    ast_node if isinstance(ast_node,ast.stmt) else ast.Expr(ast_node)
+                    for ast_node in self.translate(node)
+                )
             except Exception as e:
-                print(e)
                 traceback.print_exc()
                 self.body = [ast.Pass(), ast.Name(f" #FIXME: {str(e)}")]
         try:

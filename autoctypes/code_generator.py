@@ -27,7 +27,7 @@ class CodeGenerator:
     def from_ctype(cls, ctype, ctx, *args, **kwargs):
         if issubclass(ctype, ESTRUCT):
             return StructCodeGenerator(ctype, ctx, *args, **kwargs)
-        if issubclass(ctype, EFUNC):  # i regret my earlier decisions :(
+        if issubclass(ctype, EFUNC) or issubclass(ctype, EINLINE):  # i regret my earlier decisions :(
             return FuncCodeGenerator(ctype, ctx, *args, **kwargs)
         if issubclass(ctype, EELABORATED):
             return cls.from_ctype(ctype._original, ctx)
@@ -97,6 +97,9 @@ class StructCodeGenerator(CodeGenerator):
         return hints
 
     def __actp_code_generator__(self, *args, comment_override=None, **kwargs):
+        if self.struct in self.ctx._defined:
+            return []
+        self.ctx._defined.add(self.struct)
         taken = self.ctx._taken_names if self.ctx._taken_names is not None else set()
         body = [
             reconstruct_code_generator(locdef, self.ctx)
@@ -197,13 +200,15 @@ class FuncCodeGenerator(CodeGenerator):
         return func_def_args, func_def_returns
 
     def __actp_code_generator__(self, *args, comment_override=None, **kwargs):
+        if self.func in self.ctx._defined:
+            return []
+
+        self.ctx._defined.add(self.func)
         lib = self.ctx.find_lib(self.func.__qualname__)
         vararg_name = self._get_vararg_name()
         body = [
             reconstruct_code_generator(locdef, self.ctx)
             for locdef in self.func._localdefs
-            if getattr(getattr(locdef, "struct", None), "__qualname__", None)
-            not in self.ctx._taken_names
         ]
 
         if not lib:
@@ -213,10 +218,15 @@ class FuncCodeGenerator(CodeGenerator):
                     if comment_override is not None
                     else self.ctx.comment
                 )
-                if comment:  # maybe refactor? dry
-                    body.append(ast.Name(f"\n# {self.func._loc}"))
                 translator = Translator(self.func, self.ctx)
                 func_body = translator.get_py_ast()
+                body.extend(
+                    reconstruct_code_generator(need, self.ctx)
+                    for need in translator.needsdef
+                )
+                if comment:  # maybe refactor? dry
+                    body.append(ast.Name(f"\n# {self.func._loc}"))
+
                 func_def_args, func_def_returns = self._get_signature(vararg_name)
                 body.append(
                     ast.FunctionDef(

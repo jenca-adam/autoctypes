@@ -14,11 +14,15 @@ from .util import make_identifier
 ### STRUCT (factory)
 
 
+class ENOCAST:
+    pass
+
+
 class ESTRUCT:
     pass
 
 
-class EFUNC:
+class EFUNC(ENOCAST):
     pass
 
 
@@ -38,7 +42,7 @@ class EFORCE:
     pass
 
 
-class EINLINE:
+class EINLINE(ENOCAST):
     pass
 
 

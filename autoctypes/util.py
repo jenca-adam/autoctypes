@@ -18,8 +18,10 @@ def make_identifier(s):
 def get_root_type(tp):
     if not getattr(tp, "_NEEDSDEF", None):
         return None
-    while tp._NEEDSDEF != True:
+    while getattr(tp, "_NEEDSDEF", True) != True:
         tp = tp._NEEDSDEF
+    if not hasattr(tp, "_NEEDSDEF"):
+        return None
     return tp
 
 

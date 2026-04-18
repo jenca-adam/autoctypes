@@ -35,6 +35,7 @@ class Context:
         self.cflags = cflags
         self._taken_names = set()
         self._renamed = {}
+        self._defined = set()
 
     def find_lib(self, func):
         for lib in self.libs:

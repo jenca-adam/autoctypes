@@ -30,6 +30,8 @@ def location_to_str(loc):
 class Extractor:
     """Extracts data from C header files"""
 
+    _codegen = CodeGenerator
+
     def __init__(self, path, context, skip_includes=False):
         self.tu = cindex.TranslationUnit.from_source(
             path,
@@ -207,7 +209,6 @@ class Extractor:
 
     def _handle_type_record(self, tp, loc, curs):
         name = make_identifier(tp.spelling.split()[-1].strip())
-        self.context._renamed[tp.spelling] = name
         align = tp.get_align() if curs else 0
         is_union = tp.get_declaration().kind == cindex.CursorKind.UNION_DECL
         loc = loc or tp.get_declaration().location
@@ -260,7 +261,7 @@ class Extractor:
                     ),
                     *bw,
                 )  # not _handle_type_elaborated because of the canonical check
-        return ctypes_ext.make_struct(
+        ctype = ctypes_ext.make_struct(
             name,
             fields,
             align,
@@ -270,6 +271,9 @@ class Extractor:
             self.context,
             anon,
         )
+
+        self.context._renamed[tp.spelling] = (name, ctype)
+        return ctype
 
     def _handle_type_functionproto(self, tp, loc, curs):
         restype = self.get_ctypes_type(tp.get_result(), loc=loc)
@@ -298,7 +302,6 @@ class Extractor:
         func_name = make_identifier(curs.spelling) if curs else "ANONYMOUS"
 
         if curs:
-            self.context._renamed[curs.spelling] = func_name
             inline = bool(is_function_inlined(curs))
         localdefs = []
         for tp in (*argtypes, restype):
@@ -307,7 +310,7 @@ class Extractor:
                 localdefs.append(CodeGenerator.from_ctype(needsdef, self.context))
 
         if inline:
-            return ctypes_ext.make_inline_func(
+            ctype = ctypes_ext.make_inline_func(
                 func_name,
                 restype,
                 argtypes,
@@ -320,16 +323,20 @@ class Extractor:
                 location_to_str(loc),
                 self.context,
             )
-        return ctypes_ext.make_func(
-            func_name,
-            restype,
-            argtypes,
-            argnames,
-            localdefs,
-            variadic,
-            location_to_str(loc),
-            self.context,
-        )
+        else:
+            ctype = ctypes_ext.make_func(
+                func_name,
+                restype,
+                argtypes,
+                argnames,
+                localdefs,
+                variadic,
+                location_to_str(loc),
+                self.context,
+            )
+        if curs and self.context.wrapper_funcs:
+            self.context._renamed[curs.spelling] = (func_name, ctype)
+        return ctype
 
     def _handle_type_elaborated(self, tp, loc, *_):
         if tp.spelling not in self.typedefs:
@@ -364,6 +371,7 @@ class Extractor:
         return ctypes_ext.c_int
 
     def _handle_type_unknown(self, tp, loc, *_):
+        breakpoint()
         warnings.warn(
             UserWarning(
                 f"{location_to_str(loc)}: unsupported type: {tp.kind}. Using int."
