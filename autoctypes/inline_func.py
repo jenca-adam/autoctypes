@@ -19,6 +19,8 @@ class Translator:
         self.ctx = context
         self.body = []
         self.needs = []
+        self._args = {orig:(new,ctp) for orig, new,ctp in zip(inline_func._orig_argnames, inline_func._argnames, inline_func._argtypes)}
+        self._decls = {}
 
     def print_ast(self, node, indent=0):
         print(f"{' '*indent}{node.kind} {node.spelling!r}")
@@ -37,12 +39,13 @@ class Translator:
             cindex.CursorKind.CHARACTER_LITERAL: self._translate_literal,
             cindex.CursorKind.UNEXPOSED_EXPR: self._ignore,
             cindex.CursorKind.BINARY_OPERATOR: self._translate_binary_operator,
+            cindex.CursorKind.DECL_REF_EXPR: self._translate_decl_ref,
         }
         handler = handlers.get(node.kind)
         if not handler:
             return
         yield from handler(node)
-
+    
     def _is_ptr(self, ctp):
         return (
             issubclass(ctp, _ctypes.CFuncPtr)
@@ -66,7 +69,10 @@ class Translator:
             value=py_ast,
             attr="value",
         )
-
+    def _resolve_name(self, name):
+        if name in self._args:
+            return self._args[name]
+        raise ValueError(f"unknown name: {name}") # TODO functions, global variables, declarations, etc.
     def _value_for_return(self, ctp, py_ast):
         if (
             issubclass(ctp, ctypes._SimpleCData)
@@ -236,9 +242,18 @@ class Translator:
         yield ast.Call(ast.Name("c_char_p"), args=[ast.Constant(value.encode("utf-8"))])
 
     def _translate_call_expr(self, node):
-        func_name = node.spelling
-        ###TODO
-        yield from []
+        kids = list(node.get_children())
+        if not kids:
+            raise ValueError("empty CALL_EXPR")
+        func = next(self.translate(kids[0]))
+        restype = self.extractor.get_ctypes_type(curs=node)
+        reconstructed = reconstruct.reconstruct_type(restype)
+        args = [next(self.translate(arg)) for arg in node.get_arguments()]
+        yield ast.Call(reconstructed, [ast.Call(func, args)])
+    
+    def _translate_decl_ref(self, node):
+        name, ctp = self._resolve_name(node.spelling)
+        yield ast.Call(reconstruct.reconstruct_type(ctp), [ast.Name(name)])
 
     def get_py_ast(self):
         for node in self.inline_func._body:
