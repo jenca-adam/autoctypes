@@ -27,7 +27,9 @@ class CodeGenerator:
     def from_ctype(cls, ctype, ctx, *args, **kwargs):
         if issubclass(ctype, ESTRUCT):
             return StructCodeGenerator(ctype, ctx, *args, **kwargs)
-        if issubclass(ctype, EFUNC) or issubclass(ctype, EINLINE):  # i regret my earlier decisions :(
+        if issubclass(ctype, EFUNC) or issubclass(
+            ctype, EINLINE
+        ):  # i regret my earlier decisions :(
             return FuncCodeGenerator(ctype, ctx, *args, **kwargs)
         if issubclass(ctype, EELABORATED):
             return cls.from_ctype(ctype._original, ctx)
@@ -212,7 +214,7 @@ class FuncCodeGenerator(CodeGenerator):
         ]
 
         if not lib:
-            if self.func._IS_INLINE:
+            if self.func._IS_INLINE and self.ctx.translate_inline:
                 comment = (
                     comment_override
                     if comment_override is not None

@@ -298,7 +298,11 @@ class Extractor:
                     orig_argnames.append(child.spelling)
                     index += 1
         inline = False
-        variadic = tp.is_function_variadic()
+        variadic = (
+            tp.is_function_variadic()
+            if tp.kind == cindex.TypeKind.FUNCTIONPROTO
+            else False
+        )
         func_name = make_identifier(curs.spelling) if curs else "ANONYMOUS"
 
         if curs:

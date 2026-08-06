@@ -28,6 +28,26 @@ class EvalResultKind(enum.IntEnum):
     UnExposed = 0
 
 
+class UnaryOperatorKind(enum.Enum):
+    Invalid = 0
+    PostInc = 1
+    PostDec = 2
+    PreInc = 3
+    PreDec = 4
+    AddrOf = 5
+    Deref = 6
+    Plus = 7
+    Minus = 8
+    Not = 9
+    LNot = 10
+    Real = 11
+    Imag = 12
+    Extension = 13
+    Coawait = 14
+
+
+cindex.conf.lib.clang_getCursorUnaryOperatorKind.argtypes = [cindex.Cursor]
+cindex.conf.lib.clang_getCursorUnaryOperatorKind.restype = ctypes.c_int
 cindex.conf.lib.clang_Cursor_Evaluate.argtypes = [cindex.Cursor]
 cindex.conf.lib.clang_Cursor_Evaluate.restype = ctypes.c_void_p
 cindex.conf.lib.clang_EvalResult_getKind.argtypes = [ctypes.c_void_p]

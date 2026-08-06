@@ -4,9 +4,9 @@ import traceback
 import _ctypes
 import ctypes
 
-from . import reconstruct, ctypes_ext
+from . import reconstruct, ctypes_ext, clang_ext
 from .clang_ext import EvalResult
-from .util import get_root_type
+from .util import get_root_type, is_pointer, is_array
 
 
 class Translator:
@@ -45,9 +45,14 @@ class Translator:
             cindex.CursorKind.FLOATING_LITERAL: self._translate_literal,
             cindex.CursorKind.STRING_LITERAL: self._translate_string_literal,
             cindex.CursorKind.CHARACTER_LITERAL: self._translate_literal,
+            cindex.CursorKind.COMPOUND_LITERAL_EXPR: self._translate_compound_literal,
             cindex.CursorKind.UNEXPOSED_EXPR: self._ignore,
             cindex.CursorKind.BINARY_OPERATOR: self._translate_binary_operator,
+            cindex.CursorKind.UNARY_OPERATOR: self._translate_unary_operator,
             cindex.CursorKind.DECL_REF_EXPR: self._translate_decl_ref,
+            cindex.CursorKind.CSTYLE_CAST_EXPR: self._translate_cstyle_cast,
+            cindex.CursorKind.MEMBER_REF_EXPR: self._translate_member_ref,
+            cindex.CursorKind.ARRAY_SUBSCRIPT_EXPR: self._translate_array_subscript,
         }
         handler = handlers.get(node.kind)
         if not handler:
@@ -63,13 +68,19 @@ class Translator:
         )
 
     def _force_type(self, ctp, value, explicit=False):
-        if issubclass(ctp, ctypes_ext.ENOCAST) and not explicit:  #
+        if (
+            issubclass(ctp, ctypes_ext.ENOCAST) and not explicit
+        ):  # don't cast functions before calling etc.
             return value
         reconstructed = reconstruct.reconstruct_type(ctp)
         ### We need the type to be defined to be able to cast to it
         needs = get_root_type(ctp)
         if needs:
             self.needsdef.add(self.extractor._codegen.from_ctype(needs, self.ctx))
+        if is_pointer(ctp):
+            return ast.Call(ast.Name("cast"), [value, reconstructed])
+        if is_array(ctp):
+            return ast.Call(reconstructed, [ast.Starred(value)])
         return ast.Call(reconstructed, [value])
 
     def _value_for_op(self, ctp, py_ast):
@@ -87,18 +98,19 @@ class Translator:
             value=py_ast,
             attr="value",
         )
+
     def _value_for_arg(self, ctp, py_ast):
-        return self._value_for_return(ctp, py_ast) #for now
+        return self._value_for_return(ctp, py_ast)  # for now
+
     def _resolve_name(self, name, curs):
         ### FILTHY
         if name in self._args:
-            nm, ctp =self._args[name]
+            nm, ctp = self._args[name]
             return ast.Name(nm), ctp
         if name in self.ctx._renamed:
             nm, ctp = self.ctx._renamed[name]
             return ast.Name(nm), ctp
         if curs.referenced:
-
             ctp = self.extractor.get_ctypes_type(curs=curs.referenced)
             if ctp not in self._needtypes:
                 self.needsdef.add(self.extractor._codegen.from_ctype(ctp, self.ctx))
@@ -106,7 +118,10 @@ class Translator:
             if issubclass(ctp, ctypes_ext.EFUNC) and not self.ctx.wrapper_funcs:
                 lib = self.ctx.find_lib(ctp.__qualname__)
                 if lib:
-                    return (ast.Subscript(ast.Name(lib.id), ast.Constant(ctp.__qualname__)), ctp)
+                    return (
+                        ast.Subscript(ast.Name(lib.id), ast.Constant(ctp.__qualname__)),
+                        ctp,
+                    )
             return (ast.Name(ctp.__qualname__), ctp)
         raise ValueError(
             f"unknown name: {name}"
@@ -170,6 +185,34 @@ class Translator:
         elif right_is_ptr and not left_is_ptr:
             left = mul_by_sizeof(right_tp, left)
         return left, right
+
+    def _unop_unop(self, arg, unop):
+        ops = {
+            clang_ext.UnaryOperatorKind.Minus: ast.USub,
+            clang_ext.UnaryOperatorKind.Plus: ast.UAdd,
+        }
+        if unop not in ops:
+            return
+        return ast.UnaryOp(ops[unop](), arg)
+
+    def _unop_postincdec(self, arg, unop):
+        """
+        Absolutely disgusting.
+        a++ => ((a:=a+1)-1)
+        a-- => ((a:=a-1)+1)
+        """
+        ops = {
+            clang_ext.UnaryOperatorKind.PostInc: (ast.Add, ast.Sub),
+            clang_ext.UnaryOperatorKind.PostDec: (ast.Sub, ast.Add),
+        }
+        if unop not in ops:
+            return
+        fst, snd = ops[unop]
+        return ast.BinOp(
+            ast.NamedExpr(arg, ast.BinOp(arg, fst(), ast.Constant(1))),
+            snd(),
+            ast.Constant(1),
+        )
 
     def _binop_binop(self, left, right, binop, left_ctp, right_ctp):
         ops = {
@@ -249,6 +292,19 @@ class Translator:
             return
         return ast.NamedExpr(target=left, value=right)
 
+    def _translate_unary_operator(self, node):
+        arg_curs, *_ = node.get_children()
+        arg_ctp = self.extractor.get_ctypes_type(curs=arg_curs)
+        arg_ast = next(self.translate(arg_curs))
+        arg = self._value_for_op(arg_ctp, arg_ast)
+        unop = clang_ext.UnaryOperatorKind(
+            clang_ext.cindex.conf.lib.clang_getCursorUnaryOperatorKind(node)
+        )
+        result = self._unop_unop(arg, unop)
+        if not result:
+            raise NotImplementedError(unop)
+        result_ctp = self.extractor.get_ctypes_type(curs=node)
+        yield self._force_type(result_ctp, result)
     def _translate_binary_operator(self, node):
         left_curs, right_curs, *_ = node.get_children()
         left_ctp = self.extractor.get_ctypes_type(curs=left_curs)
@@ -297,6 +353,46 @@ class Translator:
         name, ctp = self._resolve_name(node.spelling, node)
         yield self._force_type(ctp, name)
 
+    def _translate_cstyle_cast(self, node):
+        ctype = self.extractor.get_ctypes_type(curs=node)
+        for child in node.get_children():
+            result = list(self.translate(child))
+            if result:
+                what = result[0]
+                yield self._force_type(ctype, what, explicit=True)
+                return
+        raise ValueError("nothing to cast")
+
+    def _translate_member_ref(self, node):
+        kids = list(node.get_children())
+        if not kids:
+            raise ValueError("empty MEMBER_REF_EXPR")
+        struct_or_union = next(self.translate(kids[0]))
+        ctype = self.extractor.get_ctypes_type(curs=node)
+        yield self._force_type(ctype, ast.Attribute(struct_or_union, node.spelling))
+
+    def _translate_array_subscript(self, node):
+        kids = list(node.get_children())
+        if len(kids) < 2:
+            raise ValueError("not enough children in ARRAY_SUBSCRIPT_EXPR")
+        array = next(self.translate(kids[0]))
+        index = next(self.translate(kids[1]))
+        ctype = self.extractor.get_ctypes_type(curs=node)
+        index_ctype = self.extractor.get_ctypes_type(curs=kids[1])
+        yield self._force_type(
+            ctype, ast.Subscript(array, self._value_for_op(index_ctype, index))
+        )
+
+    def _translate_compound_literal(self, node):
+        ctype = self.extractor.get_ctypes_type(curs=node)
+        rec = reconstruct.reconstruct_type(ctype)
+        for child in node.get_children():
+            if child.kind == cindex.CursorKind.INIT_LIST_EXPR:
+                args = [next(self.translate(arg)) for arg in child.get_children()]
+                yield ast.Call(rec, args)
+                return
+        raise ValueError("COMPOUND_LITERAL_EXPR without init list")
+
     def get_py_ast(self):
         for node in self.inline_func._body:
             if node.kind != cindex.CursorKind.COMPOUND_STMT:
@@ -304,7 +400,7 @@ class Translator:
             self.print_ast(node)
             try:
                 self.body.extend(
-                    ast_node if isinstance(ast_node,ast.stmt) else ast.Expr(ast_node)
+                    ast_node if isinstance(ast_node, ast.stmt) else ast.Expr(ast_node)
                     for ast_node in self.translate(node)
                 )
             except Exception as e:

@@ -13,8 +13,19 @@ import click
 @click.option("--fluff/--no-fluff", "-f/-F", is_flag=True, default=True)
 @click.option("--wrappers/--no-wrappers", "-w/-W", is_flag=True, default=True)
 @click.option("--cflags")
+@click.option("--translate-inline", is_flag=True, default=False)
 def main(
-    source, output, lib, name, type_hints, comments, includes, fluff, wrappers, cflags
+    source,
+    output,
+    lib,
+    name,
+    type_hints,
+    comments,
+    includes,
+    fluff,
+    wrappers,
+    cflags,
+    translate_inline,
 ):
     ctx = context.Context(
         [],
@@ -25,6 +36,7 @@ def main(
         name,
         wrappers,
         cflags.split() if cflags else [],
+        translate_inline,
     )
     head = code_generator.CompositorCodeGenerator(
         (

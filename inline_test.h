@@ -81,3 +81,6 @@ inline int deep_expr() {
 inline int chained_cmp() {
     return (1 < 2) == (3 < 4);
 }
+inline int array_subscript(char arr[10]){
+    return arr[5];
+}

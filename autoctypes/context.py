@@ -24,6 +24,7 @@ class Context:
         names=set(),
         wrapper_funcs=True,
         cflags=[],
+        translate_inline=False,
     ):
         self.comment = comment
         self.type_hints = type_hints
@@ -33,6 +34,8 @@ class Context:
         self.wrapper_funcs = wrapper_funcs
         self.names = set(names)
         self.cflags = cflags
+        self.translate_inline = translate_inline
+
         self._taken_names = set()
         self._renamed = {}
         self._defined = set()

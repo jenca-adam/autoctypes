@@ -18,7 +18,7 @@ class ENOCAST:
     pass
 
 
-class ESTRUCT:
+class ESTRUCT(ENOCAST):
     pass
 
 

@@ -15,19 +15,31 @@ def _actp_libload(libname):
 
 libc = _actp_libload('libc.so.6')
 
-# file declref_test.h, line 2, column 12
+# file declref_test.h, line 2, column 8
+
+class e(Structure):
+    if TYPE_CHECKING:
+        a: int
+        b: int
+e._align_ = 4
+e._fields_ = [('a', c_int32), ('b', c_int32)]
+# file declref_test.h, line 5, column 12
 
 def idk(b: int) -> int:
     return c_int32(c_int32(b).value + c_int32(1).value).value
-# file declref_test.h, line 5, column 12
+# file declref_test.h, line 8, column 12
+
+def member(f: e) -> int:
+    return c_int32(c_int32(f.a).value + c_int32(f.b).value).value
+# file declref_test.h, line 11, column 12
 
 def twice(a: int) -> int:
     return c_int32(c_int32(a).value * c_int32(2).value).value
-# file declref_test.h, line 6, column 12
+# file declref_test.h, line 12, column 12
 
 def mult(a: int, b: int) -> int:
     return c_int32(c_int32(a).value * c_int32(b).value).value
-# file declref_test.h, line 7, column 12
+# file declref_test.h, line 13, column 12
 
 def apply1(a: int) -> int:
     return c_int32(idk(c_int32(a).value)).value
@@ -39,16 +51,20 @@ libc.printf.restype = c_int32
 
 def printf(__format: bytes, *args) -> int:
     return libc.printf(__format, *args)
-# file declref_test.h, line 10, column 13
+# file declref_test.h, line 16, column 13
 
 def prInt(in_: int) -> None:
     c_int32(printf(c_char_p(b'The value is: ').value))
     c_int32(printf(c_char_p(b'%d\n').value, c_int32(in_).value))
-# file declref_test.h, line 14, column 12
+# file declref_test.h, line 20, column 12
 
 def apply2(in_: int, func: Callable[[int], int]) -> int:
     return c_int32(func(c_int32(in_).value)).value
-# file declref_test.h, line 15, column 12
+# file declref_test.h, line 21, column 12
 
 def func_cast(a: int, func: c_void_p) -> int:
-    pass #FIXME: generator raised StopIteration
+    return c_int32(cast(cast(func, c_void_p), CFUNCTYPE(c_int32, c_int32))(c_int32(a).value)).value
+# file declref_test.h, line 24, column 13
+
+def unaryOp(a: _Pointer[c_int32]) -> _Pointer[c_int32]:
+    pass #FIXME: UnaryOperatorKind.Deref

@@ -1,6 +1,7 @@
 import re
 import keyword
 import ctypes
+from clang import cindex
 from .clang_ext import is_function_inlined as is_function_inlined
 
 
@@ -23,6 +24,20 @@ def get_root_type(tp):
     if not hasattr(tp, "_NEEDSDEF"):
         return None
     return tp
+
+
+def is_pointer(tp):
+    """for casting purposes"""
+    from . import ctypes_ext
+
+    return issubclass(tp, ctypes_ext.EPOINTER) or issubclass(tp, ctypes_ext.EFUNC)
+
+
+def is_array(tp):
+    """for casting purposes"""
+    from . import ctypes_ext
+
+    return issubclass(tp, ctypes_ext.EARRAY)
 
 
 def get_cursor_tokens(cursor):
